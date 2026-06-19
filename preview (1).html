@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EM Fixed Income Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+:root {
+  --navy:#0b1f3a; --blue:#124b8c; --cyan:#38bdf8; --green:#10b981;
+  --orange:#f59e0b; --purple:#7c3aed; --slate:#64748b; --light:#f4f7fb;
+  --border:#d9e2ef; --card:#ffffff; --text:#122033;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--light); color:var(--text); }
+header {
+  background:linear-gradient(120deg,#07182d,#123e72);
+  color:white; padding:24px 32px 22px; border-bottom:4px solid #26c6da;
+}
+header h1 { margin:0; font-size:30px; letter-spacing:.2px; }
+header p { margin:7px 0 0; opacity:.85; font-size:14px; }
+.toolbar {
+  display:flex; flex-wrap:wrap; gap:12px; padding:16px 28px; background:white;
+  border-bottom:1px solid var(--border); align-items:end; position:sticky; top:0; z-index:20;
+}
+.field { display:flex; flex-direction:column; gap:5px; min-width:170px; }
+.field label { font-size:11px; color:#506176; font-weight:bold; text-transform:uppercase; letter-spacing:.5px; }
+select, button {
+  height:38px; border:1px solid #c8d4e3; border-radius:7px; background:white;
+  padding:0 12px; font-size:13px;
+}
+button { cursor:pointer; font-weight:bold; }
+button.primary { background:#0f4d94; color:white; border:none; }
+button.secondary { background:#eaf2fb; color:#0f4d94; border-color:#c9dcf2; }
+.main { padding:22px 28px 40px; }
+.kpis { display:grid; grid-template-columns:repeat(5,minmax(150px,1fr)); gap:14px; margin-bottom:18px; }
+.kpi { background:white; border:1px solid var(--border); border-radius:10px; padding:15px 16px; box-shadow:0 2px 8px rgba(20,42,74,.05); }
+.kpi .label { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:bold; }
+.kpi .value { font-size:25px; font-weight:800; margin-top:7px; }
+.kpi .sub { font-size:11px; color:#7a8797; margin-top:3px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.card { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 3px 10px rgba(20,42,74,.06); }
+.card.full { grid-column:1 / -1; }
+.card-head { padding:15px 18px 8px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.card-title { font-size:18px; font-weight:800; }
+.card-sub { font-size:12px; color:#6b7789; margin-top:4px; }
+.chart { width:100%; aspect-ratio:16/9; min-height:420px; }
+.table-wrap { padding:0 18px 18px; overflow:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#17395e; color:white; text-align:left; padding:10px 9px; position:sticky; top:0; }
+td { padding:9px; border-bottom:1px solid #edf1f6; }
+tr:nth-child(even) td { background:#f8fafc; }
+.pos { color:#057a55; font-weight:bold; }
+.neg { color:#c62828; font-weight:bold; }
+.note { margin-top:17px; font-size:12px; color:#65758b; }
+@media(max-width:1100px) {
+  .grid { grid-template-columns:1fr; }
+  .card.full { grid-column:auto; }
+  .kpis { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>EM Fixed Income Dashboard</h1>
+  <p>Data as of 18 Jun 2026 | Built from the uploaded EM FI workbook | Charts are rendered in 16:9</p>
+</header>
+
+<div class="toolbar">
+  <div class="field">
+    <label>Universe</label>
+    <select id="groupFilter"></select>
+  </div>
+  <div class="field">
+    <label>Performance Horizon</label>
+    <select id="horizon">
+      <option value="1d_tot_rtn">1D</option>
+      <option value="mtd_tot_rtn">MTD</option>
+      <option value="ytd_tot_rtn" selected>YTD</option>
+      <option value="3m_tot_rtn">3M</option>
+      <option value="6m_tot_rtn">6M</option>
+      <option value="12m_tot_rtn">12M</option>
+    </select>
+  </div>
+
+  <div class="field" style="min-width:240px">
+    <label>Update Data</label>
+    <input id="dataUpload" type="file" accept=".xlsx,.xls,.csv"
+      style="height:38px;padding:7px;border:1px solid #c8d4e3;border-radius:7px;background:white;">
+  </div>
+  <button class="secondary" onclick="loadUploadedData()">Update Dashboard</button>
+
+  <button class="secondary" onclick="resetFilters()">Reset</button>
+  <button class="primary" onclick="exportPPT()">Export Dashboard to PPT</button>
+</div>
+
+<div id="uploadStatus" style="padding:8px 28px;background:#eef5fd;border-bottom:1px solid #d9e2ef;
+font-size:12px;color:#38506c;">Current data: uploaded sample workbook</div>
+
+<div class="main">
+  <section class="kpis">
+    <div class="kpi"><div class="label">Selected Series</div><div class="value" id="kpiCount">–</div><div class="sub">Based on active universe</div></div>
+    <div class="kpi"><div class="label">Best Performer</div><div class="value" id="kpiBest">–</div><div class="sub" id="kpiBestName">–</div></div>
+    <div class="kpi"><div class="label">Worst Performer</div><div class="value" id="kpiWorst">–</div><div class="sub" id="kpiWorstName">–</div></div>
+    <div class="kpi"><div class="label">Median OAD</div><div class="value" id="kpiOad">–</div><div class="sub">Years</div></div>
+    <div class="kpi"><div class="label">Median 12M Return</div><div class="value" id="kpi12m">–</div><div class="sub">Total Return</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card full">
+      <div class="card-head"><div><div class="card-title">Performance Ranking</div><div class="card-sub">Selected horizon, sorted from highest to lowest</div></div><button onclick="downloadPlot('rankingChart','performance_ranking.png')">PNG</button></div>
+      <div id="rankingChart" class="chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Performance vs Duration</div><div class="card-sub">OAD on x-axis; selected total return on y-axis</div></div><button onclick="downloadPlot('scatterChart','performance_vs_duration.png')">PNG</button></div>
+      <div id="scatterChart" class="chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">MTD Return Composition</div><div class="card-sub">Price, coupon, currency and total return</div></div><button onclick="downloadPlot('compositionChart','return_composition.png')">PNG</button></div>
+      <div id="compositionChart" class="chart"></div>
+    </div>
+
+    <div class="card full">
+      <div class="card-head"><div><div class="card-title">Multi-Period Performance Heatmap</div><div class="card-sub">1D, MTD, YTD, 3M, 6M and 12M total returns</div></div><button onclick="downloadPlot('heatmapChart','performance_heatmap.png')">PNG</button></div>
+      <div id="heatmapChart" class="chart"></div>
+    </div>
+
+    <div class="card full">
+      <div class="card-head"><div><div class="card-title">Selected Universe Table</div><div class="card-sub">Ticker, OAD and performance metrics</div></div></div>
+      <div class="table-wrap"><table id="dataTable"></table></div>
+    </div>
+  </section>
+  <div class="note">The uploaded workbook does not contain a separate Yield-to-Maturity field or long annual history. This dashboard therefore uses the fields that are available: OAD and total-return horizons, plus MTD return decomposition.</div>
+</div>
+
+<script>
+let DATA = [{"display_name": "EM Hard Currency Aggregate", "root_label": "EM Hard Currency Aggregate", "parent_label": null, "path": "EM Hard Currency Aggregate", "level_1": "EM Hard Currency Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "LG20TRUU", "bbg_index": "LG20TRUU  Index", "last_update": "2026-06-18", "count": 2508.0, "oad": 5.781207, "mtd_px_rtn": 0.284763, "mtd_cpn_rtn": 0.261108, "mtd_curr_rtn": -0.227147, "mtd_oth_rtn": 0.0003319999999999, "mtd_tot_rtn": 0.319056, "1d_tot_rtn": -0.038085, "mtd_tot_rtn_dup": 0.319056, "ytd_tot_rtn": 1.672679, "3m_tot_rtn": 2.314729, "6m_tot_rtn": 1.879061, "12m_tot_rtn": 8.528558, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM USD Aggregate", "root_label": "EM USD Aggregate", "parent_label": null, "path": "EM USD Aggregate", "level_1": "EM USD Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "EMUSTRUU", "bbg_index": "EMUSTRUU  Index", "last_update": "2026-06-18", "count": 2149.0, "oad": 5.865315, "mtd_px_rtn": 0.298358, "mtd_cpn_rtn": 0.274543, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000388, "mtd_tot_rtn": 0.573289, "1d_tot_rtn": 0.107085, "mtd_tot_rtn_dup": 0.573289, "ytd_tot_rtn": 2.038226, "3m_tot_rtn": 2.427778, "6m_tot_rtn": 2.205896, "12m_tot_rtn": 9.20396, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM USD Aggregate: LATAM", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD Aggregate: LATAM", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD Aggregate: LATAM", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BSELTRUU", "bbg_index": "BSELTRUU  Index", "last_update": "2026-06-18", "count": 624.0, "oad": 6.403636, "mtd_px_rtn": 0.824035, "mtd_cpn_rtn": 0.292116, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0009320000000001, "mtd_tot_rtn": 1.117083, "1d_tot_rtn": null, "mtd_tot_rtn_dup": null, "ytd_tot_rtn": null, "3m_tot_rtn": null, "6m_tot_rtn": null, "12m_tot_rtn": null, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD Aggregate: Asia", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD Aggregate: Asia", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD Aggregate: Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I00020US", "bbg_index": "I00020US  Index", "last_update": "2026-06-18", "count": 690.0, "oad": 5.078546, "mtd_px_rtn": -0.196577, "mtd_cpn_rtn": 0.232832, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0003279999999999, "mtd_tot_rtn": 0.036583, "1d_tot_rtn": 0.1318, "mtd_tot_rtn_dup": 0.036583, "ytd_tot_rtn": 0.937123, "3m_tot_rtn": 0.959815, "6m_tot_rtn": 1.004092, "12m_tot_rtn": 5.849733, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD EMEA", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD EMEA", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I13292US", "bbg_index": "I13292US  Index", "last_update": "2026-06-18", "count": 835.0, "oad": 5.862499, "mtd_px_rtn": 0.155022, "mtd_cpn_rtn": 0.283096, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 9.999999999732443e-07, "mtd_tot_rtn": 0.438119, "1d_tot_rtn": 0.079029, "mtd_tot_rtn_dup": 0.438119, "ytd_tot_rtn": 1.41614, "3m_tot_rtn": 2.420735, "6m_tot_rtn": 1.608914, "12m_tot_rtn": 8.909045, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD Aggregate High Yield", "root_label": "EM USD Aggregate", "parent_label": "Broad Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BEBGTRUU", "bbg_index": "BEBGTRUU  Index", "last_update": "2026-06-18", "count": 758.0, "oad": 5.084627, "mtd_px_rtn": 0.819071, "mtd_cpn_rtn": 0.325955, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0002039999999998, "mtd_tot_rtn": 1.14523, "1d_tot_rtn": 0.079476, "mtd_tot_rtn_dup": 1.14523, "ytd_tot_rtn": 4.330271, "3m_tot_rtn": 4.525838, "6m_tot_rtn": 4.657477, "12m_tot_rtn": 14.310519, "is_top_level": false, "group": "Quality"}, {"display_name": "Ba", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ba", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Ba", "hierarchy_depth": 5, "ticker": "I05040US", "bbg_index": "I05040US  Index", "last_update": "2026-06-18", "count": 439.0, "oad": 5.596485, "mtd_px_rtn": 0.707617, "mtd_cpn_rtn": 0.322694, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000367, "mtd_tot_rtn": 1.030678, "1d_tot_rtn": 0.088152, "mtd_tot_rtn_dup": 1.030678, "ytd_tot_rtn": 2.855946, "3m_tot_rtn": 3.377899, "6m_tot_rtn": 3.1042, "12m_tot_rtn": 10.484203, "is_top_level": false, "group": "Quality"}, {"display_name": "B", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > B", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "B", "hierarchy_depth": 5, "ticker": "I05039US", "bbg_index": "I05039US  Index", "last_update": "2026-06-18", "count": 228.0, "oad": 4.527713, "mtd_px_rtn": 0.234573, "mtd_cpn_rtn": 0.374104, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.608677, "1d_tot_rtn": 0.051643, "mtd_tot_rtn_dup": 0.608677, "ytd_tot_rtn": 3.978518, "3m_tot_rtn": 4.481471, "6m_tot_rtn": 4.451375, "12m_tot_rtn": 16.22266, "is_top_level": false, "group": "Quality"}, {"display_name": "Caa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Caa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Caa", "hierarchy_depth": 5, "ticker": "I12882US", "bbg_index": "I12882US  Index", "last_update": "2026-06-18", "count": 54.0, "oad": 4.644781, "mtd_px_rtn": 2.591645, "mtd_cpn_rtn": 0.271974, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": -1.000000000139778e-06, "mtd_tot_rtn": 2.863618, "1d_tot_rtn": 0.136503, "mtd_tot_rtn_dup": 2.863618, "ytd_tot_rtn": 9.967754, "3m_tot_rtn": 9.324089, "6m_tot_rtn": 10.441645, "12m_tot_rtn": 26.136494, "is_top_level": false, "group": "Quality"}, {"display_name": "Ca-D", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ca-D", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Ca-D", "hierarchy_depth": 5, "ticker": "I12883US", "bbg_index": "I12883US  Index", "last_update": "2026-06-18", "count": 20.0, "oad": 3.455007, "mtd_px_rtn": -3.881934, "mtd_cpn_rtn": 0.248336, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -3.633598, "1d_tot_rtn": -0.501992, "mtd_tot_rtn_dup": -3.633598, "ytd_tot_rtn": 27.642825, "3m_tot_rtn": 7.14053, "6m_tot_rtn": 27.765523, "12m_tot_rtn": 43.368452, "is_top_level": false, "group": "Quality"}, {"display_name": "NR", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > NR", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "NR", "hierarchy_depth": 5, "ticker": "I12884US", "bbg_index": "I12884US  Index", "last_update": "2026-06-18", "count": 17.0, "oad": 2.756409, "mtd_px_rtn": 0.415536, "mtd_cpn_rtn": 0.265898, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.681434, "1d_tot_rtn": 0.051262, "mtd_tot_rtn_dup": 0.681434, "ytd_tot_rtn": 2.585476, "3m_tot_rtn": 1.114825, "6m_tot_rtn": 2.618842, "12m_tot_rtn": 6.627602, "is_top_level": false, "group": "Quality"}, {"display_name": "EM USD Aggregate Investment Grade", "root_label": "EM USD Aggregate", "parent_label": "Broad Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04276US", "bbg_index": "I04276US  Index", "last_update": "2026-06-18", "count": 1391.0, "oad": 6.331079, "mtd_px_rtn": -0.009507, "mtd_cpn_rtn": 0.244146, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0004959999999999, "mtd_tot_rtn": 0.235135, "1d_tot_rtn": 0.123563, "mtd_tot_rtn_dup": 0.235135, "ytd_tot_rtn": 0.728716, "3m_tot_rtn": 1.228105, "6m_tot_rtn": 0.80568, "12m_tot_rtn": 6.308199, "is_top_level": false, "group": "Quality"}, {"display_name": "Aaa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aaa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Aaa", "hierarchy_depth": 5, "ticker": "I12878US", "bbg_index": "I12878US  Index", "last_update": "2026-06-18", "count": 0.0, "oad": 0.0, "mtd_px_rtn": 0.0, "mtd_cpn_rtn": 0.0, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.0, "1d_tot_rtn": 0.0, "mtd_tot_rtn_dup": 0.0, "ytd_tot_rtn": 0.0, "3m_tot_rtn": 0.0, "6m_tot_rtn": 0.0, "12m_tot_rtn": 0.0, "is_top_level": false, "group": "Quality"}, {"display_name": "Aa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Aa", "hierarchy_depth": 5, "ticker": "I12879US", "bbg_index": "I12879US  Index", "last_update": "2026-06-18", "count": 203.0, "oad": 6.046742, "mtd_px_rtn": -0.103766, "mtd_cpn_rtn": 0.215372, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.111606, "1d_tot_rtn": 0.081034, "mtd_tot_rtn_dup": 0.111606, "ytd_tot_rtn": 0.160598, "3m_tot_rtn": 0.909187, "6m_tot_rtn": 0.226934, "12m_tot_rtn": 5.140605, "is_top_level": false, "group": "Quality"}, {"display_name": "A", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > A", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "A", "hierarchy_depth": 5, "ticker": "I12880US", "bbg_index": "I12880US  Index", "last_update": "2026-06-18", "count": 457.0, "oad": 6.160115, "mtd_px_rtn": -0.012871, "mtd_cpn_rtn": 0.233975, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.221105, "1d_tot_rtn": 0.12092, "mtd_tot_rtn_dup": 0.221105, "ytd_tot_rtn": 0.862277, "3m_tot_rtn": 1.161408, "6m_tot_rtn": 0.914339, "12m_tot_rtn": 6.066318, "is_top_level": false, "group": "Quality"}, {"display_name": "Baa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Baa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Baa", "hierarchy_depth": 5, "ticker": "I12881US", "bbg_index": "I12881US  Index", "last_update": "2026-06-18", "count": 731.0, "oad": 6.549021, "mtd_px_rtn": 0.023472, "mtd_cpn_rtn": 0.260962, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0010239999999999, "mtd_tot_rtn": 0.285458, "1d_tot_rtn": 0.139257, "mtd_tot_rtn_dup": 0.285458, "ytd_tot_rtn": 0.817322, "3m_tot_rtn": 1.38212, "6m_tot_rtn": 0.916137, "12m_tot_rtn": 6.884788, "is_top_level": false, "group": "Quality"}, {"display_name": "1-3 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 1-3 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "1-3 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12885US", "bbg_index": "I12885US  Index", "last_update": "2026-06-18", "count": 484.0, "oad": 1.707037, "mtd_px_rtn": -0.125532, "mtd_cpn_rtn": 0.253116, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.00039, "mtd_tot_rtn": 0.127974, "1d_tot_rtn": -0.005461, "mtd_tot_rtn_dup": 0.127974, "ytd_tot_rtn": 1.736417, "3m_tot_rtn": 1.235617, "6m_tot_rtn": 1.882142, "12m_tot_rtn": 5.299432, "is_top_level": false, "group": "Maturity"}, {"display_name": "3-5 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 3-5 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "3-5 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12886US", "bbg_index": "I12886US  Index", "last_update": "2026-06-18", "count": 581.0, "oad": 3.232472, "mtd_px_rtn": -0.079371, "mtd_cpn_rtn": 0.249588, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.170218, "1d_tot_rtn": 0.026088, "mtd_tot_rtn_dup": 0.170218, "ytd_tot_rtn": 1.646528, "3m_tot_rtn": 1.464655, "6m_tot_rtn": 1.81512, "12m_tot_rtn": 7.023636, "is_top_level": false, "group": "Maturity"}, {"display_name": "5-7 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 5-7 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "5-7 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12887US", "bbg_index": "I12887US  Index", "last_update": "2026-06-18", "count": 267.0, "oad": 4.634276, "mtd_px_rtn": 0.143369, "mtd_cpn_rtn": 0.278951, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.42232, "1d_tot_rtn": 0.058605, "mtd_tot_rtn_dup": 0.42232, "ytd_tot_rtn": 2.018405, "3m_tot_rtn": 2.213419, "6m_tot_rtn": 2.215044, "12m_tot_rtn": 8.397587, "is_top_level": false, "group": "Maturity"}, {"display_name": "7-10 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 7-10 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "7-10 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12888US", "bbg_index": "I12888US  Index", "last_update": "2026-06-18", "count": 306.0, "oad": 6.234166, "mtd_px_rtn": 0.415509, "mtd_cpn_rtn": 0.286434, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.001753, "mtd_tot_rtn": 0.703696, "1d_tot_rtn": 0.083875, "mtd_tot_rtn_dup": 0.703696, "ytd_tot_rtn": 2.180136, "3m_tot_rtn": 2.80147, "6m_tot_rtn": 2.417071, "12m_tot_rtn": 10.320902, "is_top_level": false, "group": "Maturity"}, {"display_name": "10-20 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 10-20 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "10-20 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12889US", "bbg_index": "I12889US  Index", "last_update": "2026-06-18", "count": 216.0, "oad": 8.661787, "mtd_px_rtn": 1.018217, "mtd_cpn_rtn": 0.301592, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.319809, "1d_tot_rtn": 0.202739, "mtd_tot_rtn_dup": 1.319809, "ytd_tot_rtn": 2.820324, "3m_tot_rtn": 3.877526, "6m_tot_rtn": 3.014126, "12m_tot_rtn": 13.117334, "is_top_level": false, "group": "Maturity"}, {"display_name": "20+ Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 20+ Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "20+ Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12890US", "bbg_index": "I12890US  Index", "last_update": "2026-06-18", "count": 295.0, "oad": 12.99504, "mtd_px_rtn": 0.804648, "mtd_cpn_rtn": 0.300076, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.104724, "1d_tot_rtn": 0.347536, "mtd_tot_rtn_dup": 1.104724, "ytd_tot_rtn": 2.303947, "3m_tot_rtn": 3.937807, "6m_tot_rtn": 2.383094, "12m_tot_rtn": 13.471952, "is_top_level": false, "group": "Maturity"}, {"display_name": "1-5 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 1-5 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "1-5 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BEM5TRUU", "bbg_index": "BEM5TRUU  Index", "last_update": "2026-06-18", "count": 1065.0, "oad": 2.538451, "mtd_px_rtn": -0.100377, "mtd_cpn_rtn": 0.251194, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000177, "mtd_tot_rtn": 0.150994, "1d_tot_rtn": 0.011732, "mtd_tot_rtn_dup": 0.150994, "ytd_tot_rtn": 1.682698, "3m_tot_rtn": 1.363289, "6m_tot_rtn": 1.841321, "12m_tot_rtn": 6.222968, "is_top_level": false, "group": "Maturity"}, {"display_name": "EM Pan-European Aggregate", "root_label": "EM Pan-European Aggregate", "parent_label": null, "path": "EM Pan-European Aggregate", "level_1": "EM Pan-European Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I04321EU", "bbg_index": "I04321EU  Index", "last_update": "2026-06-18", "count": 359.0, "oad": 5.271543, "mtd_px_rtn": 0.203826, "mtd_cpn_rtn": 0.181128, "mtd_curr_rtn": -0.000863, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.384091, "1d_tot_rtn": -0.01592, "mtd_tot_rtn_dup": 0.384091, "ytd_tot_rtn": 1.842981, "3m_tot_rtn": 1.890018, "6m_tot_rtn": 2.125278, "12m_tot_rtn": 4.854005, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Pan-European Aggregate Asia", "root_label": "EM Pan-European Aggregate", "parent_label": "Region", "path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate Asia", "level_1": "EM Pan-European Aggregate", "level_2": "Region", "level_3": "EM Pan-European Aggregate Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04337EU", "bbg_index": "I04337EU  Index", "last_update": "2026-06-18", "count": 60.0, "oad": 4.716643, "mtd_px_rtn": -0.093472, "mtd_cpn_rtn": 0.121222, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.02775, "1d_tot_rtn": 0.024911, "mtd_tot_rtn_dup": 0.02775, "ytd_tot_rtn": 0.306104, "3m_tot_rtn": 0.553858, "6m_tot_rtn": 0.412246, "12m_tot_rtn": 1.848553, "is_top_level": false, "group": "Region"}, {"display_name": "EM Pan-European Aggregate LATAM", "root_label": "EM Pan-European Aggregate", "parent_label": "Region", "path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate LATAM", "level_1": "EM Pan-European Aggregate", "level_2": "Region", "level_3": "EM Pan-European Aggregate LATAM", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04338EU", "bbg_index": "I04338EU  Index", "last_update": "2026-06-18", "count": 62.0, "oad": 5.982765, "mtd_px_rtn": 0.622963, "mtd_cpn_rtn": 0.184036, "mtd_curr_rtn": -0.00426, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.802739, "1d_tot_rtn": -0.002094, "mtd_tot_rtn_dup": 0.802739, "ytd_tot_rtn": 2.43221, "3m_tot_rtn": 2.535309, "6m_tot_rtn": 2.690849, "12m_tot_rtn": 5.480813, "is_top_level": false, "group": "Region"}, {"display_name": "EM Local Currency Govt Universal", "root_label": "EM Local Currency Govt Universal", "parent_label": null, "path": "EM Local Currency Govt Universal", "level_1": "EM Local Currency Govt Universal", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I20258US", "bbg_index": "I20258US  Index", "last_update": "2026-06-18", "count": 1022.0, "oad": 6.669889, "mtd_px_rtn": 0.174917, "mtd_cpn_rtn": 0.202793, "mtd_curr_rtn": -0.214636, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.163074, "1d_tot_rtn": -0.322301, "mtd_tot_rtn_dup": 0.163074, "ytd_tot_rtn": 1.492858, "3m_tot_rtn": 1.524626, "6m_tot_rtn": 2.364551, "12m_tot_rtn": 3.999698, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Americas", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM Americas", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM Americas", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20259US", "bbg_index": "I20259US  Index", "last_update": "2026-06-18", "count": 85.0, "oad": 4.236903, "mtd_px_rtn": 0.908513, "mtd_cpn_rtn": 0.346299, "mtd_curr_rtn": 0.187123, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.441935, "1d_tot_rtn": -1.016943, "mtd_tot_rtn_dup": 1.441935, "ytd_tot_rtn": 9.431179, "3m_tot_rtn": 6.026326, "6m_tot_rtn": 10.267315, "12m_tot_rtn": 21.071263, "is_top_level": false, "group": "Region"}, {"display_name": "EM EMEA", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM EMEA", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20266US", "bbg_index": "I20266US  Index", "last_update": "2026-06-18", "count": 225.0, "oad": 4.904752, "mtd_px_rtn": 0.591216, "mtd_cpn_rtn": 0.365275, "mtd_curr_rtn": -1.651096, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.694605, "1d_tot_rtn": -1.128345, "mtd_tot_rtn_dup": -0.694605, "ytd_tot_rtn": 3.22061, "3m_tot_rtn": 5.738289, "6m_tot_rtn": 4.564982, "12m_tot_rtn": 18.03604, "is_top_level": false, "group": "Region"}, {"display_name": "EM Asia", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM Asia", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20277US", "bbg_index": "I20277US  Index", "last_update": "2026-06-18", "count": 712.0, "oad": 7.157749, "mtd_px_rtn": 0.043347, "mtd_cpn_rtn": 0.166497, "mtd_curr_rtn": -0.069849, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.139996, "1d_tot_rtn": -0.142292, "mtd_tot_rtn_dup": 0.139996, "ytd_tot_rtn": 0.474162, "3m_tot_rtn": 0.539803, "6m_tot_rtn": 1.290601, "12m_tot_rtn": 0.912344, "is_top_level": false, "group": "Region"}, {"display_name": "EM Local Currency Govt", "root_label": "EM Local Currency Govt", "parent_label": null, "path": "EM Local Currency Govt", "level_1": "EM Local Currency Govt", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I20344US", "bbg_index": "I20344US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.115069, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM EMEA", "root_label": "EM Local Currency Govt", "parent_label": "Region", "path": "EM Local Currency Govt > Region > EM EMEA", "level_1": "EM Local Currency Govt", "level_2": "Region", "level_3": "EM EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I30744US", "bbg_index": "I30744US  Index", "last_update": "2026-06-18", "count": 139.0, "oad": 5.131704, "mtd_px_rtn": 0.721747, "mtd_cpn_rtn": 0.321998, "mtd_curr_rtn": -2.06292, "mtd_oth_rtn": -9.999999999177334e-07, "mtd_tot_rtn": -1.019176, "1d_tot_rtn": -1.199781, "mtd_tot_rtn_dup": -1.019176, "ytd_tot_rtn": 3.041551, "3m_tot_rtn": 5.757123, "6m_tot_rtn": 4.400019, "12m_tot_rtn": 17.371487, "is_top_level": false, "group": "Region"}, {"display_name": "EM Asia", "root_label": "EM Local Currency Govt", "parent_label": "Region", "path": "EM Local Currency Govt > Region > EM Asia", "level_1": "EM Local Currency Govt", "level_2": "Region", "level_3": "EM Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I22831US", "bbg_index": "I22831US  Index", "last_update": "2026-06-18", "count": 490.0, "oad": 7.067959, "mtd_px_rtn": -0.042349, "mtd_cpn_rtn": 0.148627, "mtd_curr_rtn": -0.135406, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.029128, "1d_tot_rtn": -0.203069, "mtd_tot_rtn_dup": -0.029128, "ytd_tot_rtn": 0.982338, "3m_tot_rtn": 0.706404, "6m_tot_rtn": 1.820335, "12m_tot_rtn": 1.902107, "is_top_level": false, "group": "Region"}, {"display_name": "Investment Grade", "root_label": "Broad Quality", "parent_label": "Broad Quality", "path": "Broad Quality > Investment Grade", "level_1": "Broad Quality", "level_2": "Investment Grade", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22832US", "bbg_index": "I22832US  Index", "last_update": "2026-06-18", "count": 642.0, "oad": 6.784374, "mtd_px_rtn": 0.052643, "mtd_cpn_rtn": 0.164041, "mtd_curr_rtn": -0.316025, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.099341, "1d_tot_rtn": -0.306219, "mtd_tot_rtn_dup": -0.099341, "ytd_tot_rtn": 1.435431, "3m_tot_rtn": 1.321179, "6m_tot_rtn": 2.23842, "12m_tot_rtn": 3.672856, "is_top_level": false, "group": "Quality"}, {"display_name": "High Yield", "root_label": "Broad Quality", "parent_label": "Broad Quality", "path": "Broad Quality > High Yield", "level_1": "Broad Quality", "level_2": "High Yield", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22836US", "bbg_index": "I22836US  Index", "last_update": "2026-06-18", "count": 71.0, "oad": 4.209638, "mtd_px_rtn": 1.115747, "mtd_cpn_rtn": 0.44763, "mtd_curr_rtn": -0.264446, "mtd_oth_rtn": 9.999999999177334e-07, "mtd_tot_rtn": 1.298932, "1d_tot_rtn": -1.412307, "mtd_tot_rtn_dup": 1.298932, "ytd_tot_rtn": 8.648955, "3m_tot_rtn": 6.817139, "6m_tot_rtn": 10.776715, "12m_tot_rtn": 26.09632, "is_top_level": false, "group": "Quality"}, {"display_name": "Intermediate", "root_label": "Broad Maturity", "parent_label": "Broad Maturity", "path": "Broad Maturity > Intermediate", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22842US", "bbg_index": "I22842US  Index", "last_update": "2026-06-18", "count": 469.0, "oad": 4.071968, "mtd_px_rtn": 0.135432, "mtd_cpn_rtn": 0.175108, "mtd_curr_rtn": -0.275885, "mtd_oth_rtn": 9.999999999524278e-07, "mtd_tot_rtn": 0.034656, "1d_tot_rtn": -0.38094, "mtd_tot_rtn_dup": 0.034656, "ytd_tot_rtn": 2.869944, "3m_tot_rtn": 1.957391, "6m_tot_rtn": 3.770945, "12m_tot_rtn": 7.148981, "is_top_level": false, "group": "Maturity"}, {"display_name": "1-3 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Intermediate > Maturity > 1-3 Year", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": "Maturity", "level_4": "1-3 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22843US", "bbg_index": "I22843US  Index", "last_update": "2026-06-18", "count": 154.0, "oad": 1.83016, "mtd_px_rtn": 0.000249, "mtd_cpn_rtn": 0.153335, "mtd_curr_rtn": -0.33767, "mtd_oth_rtn": 1.0000000000287557e-06, "mtd_tot_rtn": -0.184085, "1d_tot_rtn": -0.385584, "mtd_tot_rtn_dup": -0.184085, "ytd_tot_rtn": 3.254821, "3m_tot_rtn": 1.779107, "6m_tot_rtn": 4.173778, "12m_tot_rtn": 7.616959, "is_top_level": false, "group": "Maturity"}, {"display_name": "5-7 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Intermediate > Maturity > 5-7 Year", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": "Maturity", "level_4": "5-7 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22845US", "bbg_index": "I22845US  Index", "last_update": "2026-06-18", "count": 89.0, "oad": 5.313994, "mtd_px_rtn": 0.266073, "mtd_cpn_rtn": 0.178163, "mtd_curr_rtn": -0.144939, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.299297, "1d_tot_rtn": -0.346837, "mtd_tot_rtn_dup": 0.299297, "ytd_tot_rtn": 3.52846, "3m_tot_rtn": 2.38292, "6m_tot_rtn": 4.385363, "12m_tot_rtn": 7.633571, "is_top_level": false, "group": "Maturity"}, {"display_name": "Long", "root_label": "Broad Maturity", "parent_label": "Broad Maturity", "path": "Broad Maturity > Long", "level_1": "Broad Maturity", "level_2": "Long", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22847US", "bbg_index": "I22847US  Index", "last_update": "2026-06-18", "count": 244.0, "oad": 14.831805, "mtd_px_rtn": 0.1179, "mtd_cpn_rtn": 0.217438, "mtd_curr_rtn": -0.430859, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.095521, "1d_tot_rtn": -0.419622, "mtd_tot_rtn_dup": -0.095521, "ytd_tot_rtn": -0.831074, "3m_tot_rtn": 0.963081, "6m_tot_rtn": 0.044861, "12m_tot_rtn": -0.786289, "is_top_level": false, "group": "Maturity"}, {"display_name": "10-20 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Long > Maturity > 10-20 Year", "level_1": "Broad Maturity", "level_2": "Long", "level_3": "Maturity", "level_4": "10-20 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22848US", "bbg_index": "I22848US  Index", "last_update": "2026-06-18", "count": 129.0, "oad": 9.93511, "mtd_px_rtn": 0.467195, "mtd_cpn_rtn": 0.26424, "mtd_curr_rtn": -0.689555, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.04188, "1d_tot_rtn": -0.634848, "mtd_tot_rtn_dup": 0.04188, "ytd_tot_rtn": -0.676415, "3m_tot_rtn": 1.178911, "6m_tot_rtn": 0.285973, "12m_tot_rtn": 5.132176, "is_top_level": false, "group": "Maturity"}, {"display_name": "EM USD Sov + Sov Owned", "root_label": "EM USD Sov + Sov Owned", "parent_label": null, "path": "EM USD Sov + Sov Owned", "level_1": "EM USD Sov + Sov Owned", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I38156US", "bbg_index": "I38156US  Index", "last_update": "2026-06-18", "count": 693.0, "oad": 6.769494, "mtd_px_rtn": 0.477765, "mtd_cpn_rtn": 0.277346, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.755111, "1d_tot_rtn": 0.126134, "mtd_tot_rtn_dup": 0.755111, "ytd_tot_rtn": 2.449833, "3m_tot_rtn": 3.122914, "6m_tot_rtn": 2.648084, "12m_tot_rtn": 11.739017, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Asia USD Credit", "root_label": "EM Asia USD Credit", "parent_label": null, "path": "EM Asia USD Credit", "level_1": "EM Asia USD Credit", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "BEUCTRUU", "bbg_index": "BEUCTRUU  Index", "last_update": "2026-06-18", "count": 1208.0, "oad": 4.851958, "mtd_px_rtn": -0.203972, "mtd_cpn_rtn": 0.23632, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0002449999999999, "mtd_tot_rtn": 0.032593, "1d_tot_rtn": 0.125435, "mtd_tot_rtn_dup": 0.032593, "ytd_tot_rtn": 0.967304, "3m_tot_rtn": 0.886168, "6m_tot_rtn": 1.036721, "12m_tot_rtn": 5.830264, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM GCC Credit Benchmark", "root_label": "EM GCC Credit Benchmark", "parent_label": null, "path": "EM GCC Credit Benchmark", "level_1": "EM GCC Credit Benchmark", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I23117US", "bbg_index": "I23117US  Index", "last_update": "2026-06-18", "count": 477.0, "oad": 6.107523, "mtd_px_rtn": 0.013797, "mtd_cpn_rtn": 0.247848, "mtd_curr_rtn": -0.039675, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.22197, "1d_tot_rtn": 0.014053, "mtd_tot_rtn_dup": 0.22197, "ytd_tot_rtn": 0.443919, "3m_tot_rtn": 1.687698, "6m_tot_rtn": 0.546823, "12m_tot_rtn": 5.831061, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Local Government + China", "root_label": "EM Local Government + China", "parent_label": null, "path": "EM Local Government + China", "level_1": "EM Local Government + China", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I32750US", "bbg_index": "I32750US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.115069, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Local Government + India FAR", "root_label": "EM Local Government + India FAR", "parent_label": null, "path": "EM Local Government + India FAR", "level_1": "EM Local Government + India FAR", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I36368US", "bbg_index": "I36368US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.03225, "is_top_level": true, "group": "Top Level"}];
+const metricLabels = {
+  '1d_tot_rtn':'1D', 'mtd_tot_rtn':'MTD', 'ytd_tot_rtn':'YTD',
+  '3m_tot_rtn':'3M', '6m_tot_rtn':'6M', '12m_tot_rtn':'12M'
+};
+const colors = {
+  'Top Level':'#0f4d94', 'Region':'#10b981', 'Quality':'#7c3aed',
+  'Maturity':'#f59e0b', 'Other':'#64748b'
+};
+const layoutBase = {
+  paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff',
+  margin:{l:70,r:25,t:35,b:100},
+  font:{family:'Arial',color:'#1d2d44'},
+  xaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9'},
+  yaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9'},
+  showlegend:true
+};
+const config = {displaylogo:false, responsive:true};
+
+
+function firstNonEmpty(arr) {
+  for (const v of arr) {
+    if (v !== null && v !== undefined && String(v).trim() !== '') return String(v).trim();
+  }
+  return null;
+}
+function toNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function inferGroupFromPath(path, name, isTop) {
+  const p = String(path || '');
+  if (p.includes('Maturity')) return 'Maturity';
+  if (p.includes('Quality') || ['Investment Grade','High Yield','Aaa','Aa','A','Baa','Ba','B','Caa','Ca-D','NR'].includes(name)) return 'Quality';
+  if (p.includes('Region')) return 'Region';
+  if (isTop) return 'Top Level';
+  return 'Other';
+}
+function parseReturnSheet(rows) {
+  const context = [null,null,null,null,null];
+  const out = [];
+  for (let r = 2; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const levels = row.slice(0,5);
+    for (let i=0;i<5;i++) {
+      const v = levels[i];
+      if (v !== null && v !== undefined && String(v).trim() !== '') {
+        context[i] = String(v).trim();
+        for (let j=i+1;j<5;j++) context[j]=null;
+      }
+    }
+    const ticker = row[5];
+    if (ticker === null || ticker === undefined || String(ticker).trim()==='') continue;
+    const active = context.filter(x=>x!==null && x!=='');
+    const display = active.length ? active[active.length-1] : String(ticker);
+    const path = active.join(' > ');
+    const isTop = active.length===1;
+    const rec = {
+      display_name: display,
+      root_label: active[0] || null,
+      parent_label: active.length>1 ? active[active.length-2] : null,
+      path: path,
+      level_1: context[0], level_2: context[1], level_3: context[2], level_4: context[3], level_5: context[4],
+      hierarchy_depth: active.length,
+      ticker: String(ticker).trim(),
+      bbg_index: row[6] || null,
+      last_update: row[7] || null,
+      count: toNum(row[8]),
+      oad: toNum(row[9]),
+      mtd_px_rtn: toNum(row[10]),
+      mtd_cpn_rtn: toNum(row[11]),
+      mtd_curr_rtn: toNum(row[12]),
+      mtd_oth_rtn: toNum(row[13]),
+      mtd_tot_rtn: toNum(row[14]),
+      '1d_tot_rtn': toNum(row[16]),
+      ytd_tot_rtn: toNum(row[18]),
+      '3m_tot_rtn': toNum(row[19]),
+      '6m_tot_rtn': toNum(row[20]),
+      '12m_tot_rtn': toNum(row[21]),
+      is_top_level: isTop
+    };
+    rec.group = inferGroupFromPath(path, display, isTop);
+    out.push(rec);
+  }
+  return out;
+}
+function parseCsvRows(rows) {
+  // CSV should use the parsed-dashboard column names.
+  const headers = rows[0].map(x=>String(x||'').trim());
+  return rows.slice(1).filter(r=>r.some(v=>v!==null && v!==undefined && String(v).trim()!=='')).map(r=>{
+    const obj = {};
+    headers.forEach((h,i)=>obj[h]=r[i]===undefined?null:r[i]);
+    ['count','oad','mtd_px_rtn','mtd_cpn_rtn','mtd_curr_rtn','mtd_oth_rtn','mtd_tot_rtn',
+     '1d_tot_rtn','ytd_tot_rtn','3m_tot_rtn','6m_tot_rtn','12m_tot_rtn','hierarchy_depth']
+      .forEach(c=>obj[c]=toNum(obj[c]));
+    obj.is_top_level = String(obj.is_top_level).toLowerCase()==='true' || obj.is_top_level===1;
+    obj.group = obj.group || inferGroupFromPath(obj.path,obj.display_name,obj.is_top_level);
+    return obj;
+  });
+}
+async function loadUploadedData() {
+  const input = document.getElementById('dataUpload');
+  const status = document.getElementById('uploadStatus');
+  if (!input.files || !input.files.length) {
+    status.textContent = 'Please choose an Excel or CSV file first.';
+    status.style.color = '#b45309';
+    return;
+  }
+  const file = input.files[0];
+  try {
+    status.textContent = 'Reading ' + file.name + ' ...';
+    status.style.color = '#38506c';
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, {type:'array', cellDates:false});
+    let newData = [];
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      newData = parseCsvRows(rows);
+    } else {
+      const sheetName = wb.SheetNames.includes('Return') ? 'Return' : wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      newData = parseReturnSheet(rows);
+    }
+    if (!newData.length) throw new Error('No usable rows found.');
+    DATA = newData;
+    refreshGroupOptions();
+    resetFilters();
+    const dates = DATA.map(x=>x.last_update).filter(Boolean);
+    status.textContent = 'Updated successfully: ' + file.name + ' | ' + DATA.length + ' series';
+    status.style.color = '#047857';
+  } catch (err) {
+    status.textContent = 'Update failed: ' + err.message;
+    status.style.color = '#b91c1c';
+  }
+}
+function refreshGroupOptions() {
+  const sel = document.getElementById('groupFilter');
+  const old = sel.value || 'Top Level';
+  sel.innerHTML = '';
+  const standard = ['Top Level','Region','Quality','Maturity','All Series'];
+  standard.forEach(g=>{
+    const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o);
+  });
+  sel.value = standard.includes(old) ? old : 'Top Level';
+}
+
+function populateFilters() {
+  const groups = ['Top Level','Region','Quality','Maturity','All Series'];
+  const sel = document.getElementById('groupFilter');
+  sel.innerHTML='';
+  groups.forEach(g => {
+    const o = document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o);
+  });
+  sel.value='Top Level';
+  sel.onchange=renderAll;
+  document.getElementById('horizon').onchange=renderAll;
+}
+
+function currentData() {
+  const g=document.getElementById('groupFilter').value;
+  let d = g==='All Series' ? DATA.slice() : DATA.filter(x=>x.group===g);
+  return d.filter(x=>x.display_name && x.ticker);
+}
+function fmt(v, digits=1) { return (v===null || v===undefined || Number.isNaN(v)) ? '–' : Number(v).toFixed(digits)+'%'; }
+function median(arr) {
+  const a=arr.filter(v=>v!==null && !Number.isNaN(v)).sort((x,y)=>x-y);
+  if(!a.length) return null; const m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function updateKpis(d, metric) {
+  const vals=d.filter(x=>x[metric]!==null).sort((a,b)=>b[metric]-a[metric]);
+  document.getElementById('kpiCount').textContent=d.length;
+  if(vals.length) {
+    document.getElementById('kpiBest').textContent=fmt(vals[0][metric]);
+    document.getElementById('kpiBestName').textContent=vals[0].display_name;
+    const w=vals[vals.length-1];
+    document.getElementById('kpiWorst').textContent=fmt(w[metric]);
+    document.getElementById('kpiWorstName').textContent=w.display_name;
+  }
+  const mo=median(d.map(x=>x.oad));
+  const m12=median(d.map(x=>x['12m_tot_rtn']));
+  document.getElementById('kpiOad').textContent=mo===null?'–':mo.toFixed(1);
+  document.getElementById('kpi12m').textContent=m12===null?'–':m12.toFixed(1)+'%';
+}
+function renderRanking(d, metric) {
+  const s=d.filter(x=>x[metric]!==null).sort((a,b)=>b[metric]-a[metric]);
+  const trace={
+    type:'bar', orientation:'h',
+    y:s.map(x=>x.display_name).reverse(),
+    x:s.map(x=>x[metric]).reverse(),
+    text:s.map(x=>fmt(x[metric])).reverse(), textposition:'outside',
+    marker:{color:s.map(x=>colors[x.group]||'#0f4d94').reverse()}
+  };
+  Plotly.react('rankingChart',[trace],{...layoutBase,
+    height:Math.max(500,s.length*34+150),
+    margin:{l:230,r:70,t:25,b:70},
+    xaxis:{...layoutBase.xaxis,title:metricLabels[metric]+' Total Return (%)'},
+    yaxis:{automargin:true}
+  },config);
+}
+function renderScatter(d, metric) {
+  const traces=[];
+  [...new Set(d.map(x=>x.group))].forEach(g=>{
+    const s=d.filter(x=>x.group===g && x.oad!==null && x[metric]!==null);
+    traces.push({
+      type:'scatter', mode:'markers+text', name:g,
+      x:s.map(x=>x.oad), y:s.map(x=>x[metric]),
+      text:s.map(x=>x.display_name), textposition:'top center',
+      marker:{size:s.map(x=>Math.max(11,Math.min(28,(x.count||100)/80+10))),color:colors[g]||'#0f4d94',opacity:.85},
+      hovertemplate:'%{text}<br>OAD: %{x:.2f}<br>Return: %{y:.2f}%<extra></extra>'
+    });
+  });
+  Plotly.react('scatterChart',traces,{...layoutBase,height:520,
+    margin:{l:65,r:30,t:30,b:65},
+    xaxis:{...layoutBase.xaxis,title:'OAD (years)'},
+    yaxis:{...layoutBase.yaxis,title:metricLabels[metric]+' Total Return (%)'}
+  },config);
+}
+function renderComposition(d) {
+  const s=d.filter(x=>x.mtd_px_rtn!==null || x.mtd_cpn_rtn!==null || x.mtd_curr_rtn!==null);
+  const names=s.map(x=>x.display_name);
+  const traces=[
+    {type:'bar',name:'Price Return',x:names,y:s.map(x=>x.mtd_px_rtn||0),marker:{color:'#666b72'}},
+    {type:'bar',name:'Coupon Return',x:names,y:s.map(x=>x.mtd_cpn_rtn||0),marker:{color:'#0f4d94'}},
+    {type:'bar',name:'Currency Return',x:names,y:s.map(x=>x.mtd_curr_rtn||0),marker:{color:'#10b981'}},
+    {type:'scatter',mode:'markers',name:'Total Return',x:names,y:s.map(x=>x.mtd_tot_rtn),
+      marker:{symbol:'diamond',size:11,color:'#7c3aed',line:{color:'white',width:1.5}}}
+  ];
+  Plotly.react('compositionChart',traces,{...layoutBase,height:520,barmode:'relative',
+    margin:{l:65,r:25,t:30,b:145},
+    yaxis:{...layoutBase.yaxis,title:'Return (%)'},
+    xaxis:{tickangle:-35}
+  },config);
+}
+function renderHeatmap(d) {
+  const metrics=['1d_tot_rtn','mtd_tot_rtn','ytd_tot_rtn','3m_tot_rtn','6m_tot_rtn','12m_tot_rtn'];
+  const z=d.map(x=>metrics.map(m=>x[m]));
+  Plotly.react('heatmapChart',[{
+    type:'heatmap', z:z, x:metrics.map(m=>metricLabels[m]), y:d.map(x=>x.display_name),
+    colorscale:[[0,'#c62828'],[.5,'#fff7bc'],[1,'#087f5b']],
+    zmid:0, text:z.map(r=>r.map(v=>v===null?'':Number(v).toFixed(1))),
+    texttemplate:'%{text}', hovertemplate:'%{y}<br>%{x}: %{z:.2f}%<extra></extra>',
+    colorbar:{title:'Return %'}
+  }],{...layoutBase,height:Math.max(520,d.length*34+160),
+    margin:{l:230,r:70,t:25,b:60},
+    xaxis:{side:'top'},yaxis:{automargin:true}
+  },config);
+}
+function renderTable(d) {
+  const headers=['Asset','Group','Ticker','OAD','MTD','YTD','3M','6M','12M'];
+  let h='<thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>';
+  d.forEach(x=>{
+    const vals=[x.display_name,x.group,x.ticker,x.oad===null?'–':Number(x.oad).toFixed(2),
+      fmt(x.mtd_tot_rtn),fmt(x.ytd_tot_rtn),fmt(x['3m_tot_rtn']),fmt(x['6m_tot_rtn']),fmt(x['12m_tot_rtn'])];
+    h+='<tr>'+vals.map((v,i)=>{
+      let cls='';
+      if(i>=4 && v!=='–') cls=parseFloat(v)>=0?'pos':'neg';
+      return '<td class="'+cls+'">'+v+'</td>';
+    }).join('')+'</tr>';
+  });
+  h+='</tbody>'; document.getElementById('dataTable').innerHTML=h;
+}
+function renderAll() {
+  const d=currentData(); const metric=document.getElementById('horizon').value;
+  updateKpis(d,metric); renderRanking(d,metric); renderScatter(d,metric);
+  renderComposition(d); renderHeatmap(d); renderTable(d);
+}
+function resetFilters() {
+  document.getElementById('groupFilter').value='Top Level';
+  document.getElementById('horizon').value='ytd_tot_rtn';
+  renderAll();
+}
+function downloadPlot(id,filename) {
+  Plotly.downloadImage(id,{format:'png',filename:filename.replace('.png',''),width:1600,height:900,scale:1});
+}
+async function plotDataUrl(id) {
+  return await Plotly.toImage(id,{format:'png',width:1600,height:900});
+}
+async function exportPPT() {
+  const pptx = new PptxGenJS();
+  pptx.layout='LAYOUT_WIDE';
+  pptx.author='EM FI Dashboard';
+  pptx.subject='EM Fixed Income Dashboard';
+  pptx.title='EM FI Dashboard Export';
+  pptx.company='Think Then Talk';
+  pptx.lang='en-US';
+  pptx.theme={headFontFace:'Arial',bodyFontFace:'Arial',lang:'en-US'};
+  pptx.defineSlideMaster({
+    title:'MASTER',
+    background:{color:'F5F8FC'},
+    objects:[
+      {rect:{x:0,y:0,w:13.333,h:.42,fill:{color:'0B1F3A'},line:{color:'0B1F3A'}}},
+      {text:{text:'EM Fixed Income Dashboard',options:{x:.45,y:.08,w:6.5,h:.22,fontFace:'Arial',fontSize:13,bold:true,color:'FFFFFF',margin:0}}},
+      {text:{text:'Data as of 18 Jun 2026',options:{x:10.4,y:.1,w:2.4,h:.18,fontFace:'Arial',fontSize:8,color:'DCE7F3',align:'right',margin:0}}}
+    ],
+    slideNumber:{x:12.85,y:7.15,color:'748397',fontSize:8}
+  });
+  const items=[
+    ['rankingChart','Performance Ranking'],
+    ['scatterChart','Performance vs Duration'],
+    ['compositionChart','MTD Return Composition'],
+    ['heatmapChart','Multi-Period Performance Heatmap']
+  ];
+  for (const [id,title] of items) {
+    const slide=pptx.addSlide('MASTER');
+    slide.addText(title,{x:.55,y:.62,w:12.1,h:.35,fontFace:'Arial',fontSize:22,bold:true,color:'122033',margin:0});
+    const img=await plotDataUrl(id);
+    slide.addImage({data:img,x:.55,y:1.05,w:12.2,h:5.95});
+    slide.addText('Source: Uploaded EM FI workbook',{x:.62,y:7.08,w:4.5,h:.15,fontSize:7,color:'748397',margin:0});
+  }
+  await pptx.writeFile({fileName:'EM_FI_Dashboard_Export.pptx'});
+}
+populateFilters();
+renderAll();
+</script>
+</body>
+</html>
