@@ -65,7 +65,7 @@ tr:nth-child(even) td { background:#f8fafc; }
 <body>
 <header>
   <h1>EM Fixed Income Dashboard</h1>
-  <p>Data as of 18 Jun 2026 | Built from the uploaded EM FI workbook | Charts are rendered in 16:9</p>
+  <p><span id="headerDataDate">Data as of 18 Jun 2026</span> | Source: Bloomberg | Charts are rendered in 16:9</p>
 </header>
 
 <div class="toolbar">
@@ -321,10 +321,47 @@ function inferGroupFromPath(path, name, isTop) {
   if (isTop) return 'Top Level';
   return 'Other';
 }
+function normalizeHeader(v) {
+  return String(v ?? '').trim().toLowerCase().replace(/[\s_\-]+/g,'');
+}
+function excelDateToIso(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const p = XLSX.SSF.parse_date_code(v);
+    if (p) return `${p.y}-${String(p.m).padStart(2,'0')}-${String(p.d).padStart(2,'0')}`;
+  }
+  const text = String(v).trim();
+  const d = new Date(text);
+  if (!isNaN(d)) return d.toISOString().slice(0,10);
+  return text;
+}
+function formatDisplayDate(v) {
+  if (!v) return 'N/A';
+  const d = new Date(String(v).slice(0,10) + 'T00:00:00');
+  if (isNaN(d)) return String(v);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function getDataAsOf() {
+  const dates = DATA.map(x=>excelDateToIso(x.last_update)).filter(Boolean).sort();
+  return dates.length ? dates[dates.length-1] : null;
+}
+function updateDataDateDisplay() {
+  const label = 'Data as of ' + formatDisplayDate(getDataAsOf());
+  const el = document.getElementById('headerDataDate');
+  if (el) el.textContent = label;
+  return label;
+}
 function parseReturnSheet(rows) {
   const context = [null,null,null,null,null];
   const out = [];
-  for (let r = 2; r < rows.length; r++) {
+  const headerRowIndex = rows.findIndex(row => (row || []).some(v => normalizeHeader(v) === 'lastupdate'));
+  const headerRow = headerRowIndex >= 0 ? rows[headerRowIndex] : [];
+  const headerMap = {};
+  headerRow.forEach((v,i)=>{ const key=normalizeHeader(v); if(key) headerMap[key]=i; });
+  const lastUpdateCol = headerMap.lastupdate ?? 7;
+  const dataStartRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 2;
+  for (let r = dataStartRow; r < rows.length; r++) {
     const row = rows[r] || [];
     const levels = row.slice(0,5);
     for (let i=0;i<5;i++) {
@@ -349,7 +386,7 @@ function parseReturnSheet(rows) {
       hierarchy_depth: active.length,
       ticker: String(ticker).trim(),
       bbg_index: row[6] || null,
-      last_update: row[7] || null,
+      last_update: excelDateToIso(row[lastUpdateCol]),
       count: toNum(row[8]),
       oad: toNum(row[9]),
       mtd_px_rtn: toNum(row[10]),
@@ -378,6 +415,9 @@ function parseCsvRows(rows) {
     ['count','oad','mtd_px_rtn','mtd_cpn_rtn','mtd_curr_rtn','mtd_oth_rtn','mtd_tot_rtn',
      '1d_tot_rtn','ytd_tot_rtn','3m_tot_rtn','6m_tot_rtn','12m_tot_rtn','hierarchy_depth']
       .forEach(c=>obj[c]=toNum(obj[c]));
+    const lastUpdateKey = headers.find(h=>normalizeHeader(h)==='lastupdate');
+    if (lastUpdateKey && obj.last_update == null) obj.last_update = obj[lastUpdateKey];
+    obj.last_update = excelDateToIso(obj.last_update);
     obj.is_top_level = String(obj.is_top_level).toLowerCase()==='true' || obj.is_top_level===1;
     obj.group = obj.group || inferGroupFromPath(obj.path,obj.display_name,obj.is_top_level);
     return obj;
@@ -412,8 +452,8 @@ async function loadUploadedData() {
     DATA = newData;
     refreshGroupOptions();
     resetFilters();
-    const dates = DATA.map(x=>x.last_update).filter(Boolean);
-    status.textContent = 'Updated successfully: ' + file.name + ' | ' + DATA.length + ' series';
+    const dataDateLabel = updateDataDateDisplay();
+    status.textContent = 'Updated successfully: ' + file.name + ' | ' + DATA.length + ' series | ' + dataDateLabel;
     status.style.color = '#047857';
   } catch (err) {
     status.textContent = 'Update failed: ' + err.message;
@@ -748,7 +788,7 @@ async function exportPPT() {
     objects:[
       {rect:{x:0,y:0,w:13.333,h:.42,fill:{color:'0B1F3A'},line:{color:'0B1F3A'}}},
       {text:{text:'EM Fixed Income Dashboard',options:{x:.45,y:.08,w:6.5,h:.22,fontFace:chartFontName(),fontSize:14,bold:true,color:'FFFFFF',margin:0}}},
-      {text:{text:'Data as of 18 Jun 2026',options:{x:10.4,y:.1,w:2.4,h:.18,fontFace:chartFontName(),fontSize:9,color:'DCE7F3',align:'right',margin:0}}}
+      {text:{text:updateDataDateDisplay(),options:{x:10.0,y:.1,w:2.8,h:.18,fontFace:chartFontName(),fontSize:9,color:'DCE7F3',align:'right',margin:0}}}
     ],
     slideNumber:{x:12.85,y:7.15,color:'748397',fontSize:8}
   });
@@ -763,11 +803,12 @@ async function exportPPT() {
     slide.addText(title,{x:.55,y:.62,w:12.1,h:.35,fontFace:chartFontName(),fontSize:pptTitleSize(),bold:true,color:'122033',margin:0});
     const img=await plotDataUrl(id);
     slide.addImage({data:img,x:.35,y:.95,w:12.65,h:6.05});
-    slide.addText('Source: Uploaded EM FI workbook',{x:.62,y:7.08,w:4.5,h:.15,fontFace:chartFontName(),fontSize:9,color:'748397',margin:0});
+    slide.addText('Source: Bloomberg',{x:.62,y:7.08,w:4.5,h:.15,fontFace:chartFontName(),fontSize:9,color:'748397',margin:0});
   }
   await pptx.writeFile({fileName:'EM_FI_Dashboard_Export.pptx'});
 }
 populateFilters();
+updateDataDateDisplay();
 renderAll();
 </script>
 </body>
