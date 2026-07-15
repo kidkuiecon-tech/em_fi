@@ -3,59 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EM Fixed Income Dashboard</title>
+<title>EM FI Dashboard - Cascading Hierarchy</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
 :root {
-  --navy:#0b1f3a; --blue:#124b8c; --cyan:#38bdf8; --green:#10b981;
-  --orange:#f59e0b; --purple:#7c3aed; --slate:#64748b; --light:#f4f7fb;
-  --border:#d9e2ef; --card:#ffffff; --text:#122033;
+  --navy:#0b1f3a; --blue:#0f4d94; --green:#10b981; --orange:#f59e0b; --purple:#7c3aed;
+  --light:#f4f7fb; --border:#d9e2ef; --text:#122033;
 }
 * { box-sizing:border-box; }
-body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--light); color:var(--text); }
-header {
-  background:linear-gradient(120deg,#07182d,#123e72);
-  color:white; padding:24px 32px 22px; border-bottom:4px solid #26c6da;
-}
-header h1 { margin:0; font-size:30px; letter-spacing:.2px; }
-header p { margin:7px 0 0; opacity:.85; font-size:14px; }
-.toolbar {
-  display:flex; flex-wrap:wrap; gap:12px; padding:16px 28px; background:white;
-  border-bottom:1px solid var(--border); align-items:end; position:sticky; top:0; z-index:20;
-}
-.field { display:flex; flex-direction:column; gap:5px; min-width:170px; }
-.field label { font-size:11px; color:#506176; font-weight:bold; text-transform:uppercase; letter-spacing:.5px; }
-select, button {
-  height:38px; border:1px solid #c8d4e3; border-radius:7px; background:white;
-  padding:0 12px; font-size:13px;
-}
-button { cursor:pointer; font-weight:bold; }
-button.primary { background:#0f4d94; color:white; border:none; }
+body { margin:0; background:var(--light); color:var(--text); font-family:Arial, Helvetica, sans-serif; }
+header { background:linear-gradient(120deg,#07182d,#123e72); color:#fff; padding:24px 32px 20px; border-bottom:4px solid #26c6da; }
+header h1 { margin:0; font-size:30px; }
+header p { margin:7px 0 0; opacity:.86; font-size:14px; }
+.toolbar { display:flex; flex-wrap:wrap; gap:12px; padding:15px 28px; background:#fff; border-bottom:1px solid var(--border); align-items:end; position:sticky; top:0; z-index:20; }
+.field { display:flex; flex-direction:column; gap:5px; min-width:145px; }
+.field label { font-size:11px; color:#506176; font-weight:800; text-transform:uppercase; letter-spacing:.5px; }
+select,button,input[type=file],input[type=text] { height:38px; border:1px solid #c8d4e3; border-radius:7px; background:#fff; padding:0 12px; font-size:13px; }
+button { cursor:pointer; font-weight:800; }
+button.primary { background:#0f4d94; color:#fff; border:none; }
 button.secondary { background:#eaf2fb; color:#0f4d94; border-color:#c9dcf2; }
 .main { padding:22px 28px 40px; }
+.status { padding:8px 28px; background:#eef5fd; border-bottom:1px solid #d9e2ef; font-size:12px; color:#38506c; }
+.panel,.card,.kpi { background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 3px 10px rgba(20,42,74,.06); }
+.panel { overflow:hidden; margin-bottom:18px; }
+.panel-head { padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid #edf1f6; }
+.panel-title { font-size:17px; font-weight:900; }
+.panel-sub { font-size:12px; color:#6b7789; margin-top:4px; }
+.panel-body { padding:14px 18px 16px; }
+.selector-grid { display:grid; grid-template-columns:repeat(4,minmax(210px,1fr)); gap:14px; }
+.selector-box { border:1px solid #e2eaf5; border-radius:10px; background:#fbfdff; padding:10px; min-height:170px; max-height:300px; overflow:auto; }
+.selector-box h4 { margin:0 0 8px; font-size:12px; color:#17395e; text-transform:uppercase; letter-spacing:.4px; }
+.option { display:flex; gap:7px; align-items:flex-start; padding:6px 4px; font-size:12px; line-height:1.25; border-bottom:1px solid #eef3f9; }
+.option:last-child { border-bottom:none; }
+.option input { margin-top:2px; }
+.option b { font-size:12px; }
+.option small { display:block; color:#75849a; font-size:10px; margin-top:2px; }
+.series-list { display:grid; grid-template-columns:repeat(2,minmax(340px,1fr)); gap:8px 14px; max-height:330px; overflow:auto; padding-right:8px; }
+.series-card { display:flex; gap:8px; align-items:flex-start; border:1px solid #e2eaf5; border-radius:9px; background:#fbfdff; padding:8px 9px; font-size:12px; }
+.series-card input { margin-top:2px; }
+.series-main { font-weight:900; color:#143452; }
+.series-path { font-size:10px; color:#748197; margin-top:2px; }
+.quick-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .kpis { display:grid; grid-template-columns:repeat(5,minmax(150px,1fr)); gap:14px; margin-bottom:18px; }
-.kpi { background:white; border:1px solid var(--border); border-radius:10px; padding:15px 16px; box-shadow:0 2px 8px rgba(20,42,74,.05); }
-.kpi .label { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:bold; }
-.kpi .value { font-size:25px; font-weight:800; margin-top:7px; }
+.kpi { padding:15px 16px; }
+.kpi .label { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:800; }
+.kpi .value { font-size:25px; font-weight:900; margin-top:7px; }
 .kpi .sub { font-size:11px; color:#7a8797; margin-top:3px; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-.card { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 3px 10px rgba(20,42,74,.06); }
-.card.full { grid-column:1 / -1; }
+.card { overflow:hidden; }
+.card.full { grid-column:1/-1; }
 .card-head { padding:15px 18px 8px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.card-title { font-size:18px; font-weight:800; }
+.card-title { font-size:18px; font-weight:900; }
 .card-sub { font-size:12px; color:#6b7789; margin-top:4px; }
-.chart { width:100%; aspect-ratio:16/9; min-height:420px; }
+.chart { width:100%; aspect-ratio:16/9; min-height:460px; }
 .table-wrap { padding:0 18px 18px; overflow:auto; }
 table { width:100%; border-collapse:collapse; font-size:12px; }
-th { background:#17395e; color:white; text-align:left; padding:10px 9px; position:sticky; top:0; }
+th { background:#17395e; color:#fff; text-align:left; padding:10px 9px; position:sticky; top:0; }
 td { padding:9px; border-bottom:1px solid #edf1f6; }
 tr:nth-child(even) td { background:#f8fafc; }
-.pos { color:#057a55; font-weight:bold; }
-.neg { color:#c62828; font-weight:bold; }
-.note { margin-top:17px; font-size:12px; color:#65758b; }
-@media(max-width:1100px) {
+.pos { color:#057a55; font-weight:800; }
+.neg { color:#c62828; font-weight:800; }
+.note { margin-top:12px; font-size:12px; color:#65758b; }
+.path-chip { display:inline-block; background:#edf4fb; border:1px solid #d7e6f7; border-radius:20px; padding:3px 8px; font-size:10px; color:#34516d; margin:0 4px 4px 0; }
+.parent-label { color:#38506c; font-weight:500; }
+@media(max-width:1200px) {
+  .selector-grid { grid-template-columns:1fr 1fr; }
+  .series-list { grid-template-columns:1fr; }
   .grid { grid-template-columns:1fr; }
   .card.full { grid-column:auto; }
   .kpis { grid-template-columns:repeat(2,1fr); }
@@ -65,16 +80,17 @@ tr:nth-child(even) td { background:#f8fafc; }
 <body>
 <header>
   <h1>EM Fixed Income Dashboard</h1>
-  <p><span id="headerDataDate">Data as of 18 Jun 2026</span> | Source: Bloomberg | Charts are rendered in 16:9</p>
+  <p>Cascading hierarchy: Sub-categories are tied to their exact parent path, not shared globally across Main Universe</p>
 </header>
 
 <div class="toolbar">
-  <div class="field">
-    <label>Universe</label>
-    <select id="groupFilter"></select>
+  <div class="field" style="min-width:250px">
+    <label>Update Data</label>
+    <input id="dataUpload" type="file" accept=".xlsx,.xls,.csv">
   </div>
+  <button class="secondary" onclick="loadUploadedData()">Update Dashboard</button>
   <div class="field">
-    <label>Performance Horizon</label>
+    <label>Horizon</label>
     <select id="horizon">
       <option value="1d_tot_rtn">1D</option>
       <option value="mtd_tot_rtn">MTD</option>
@@ -85,111 +101,69 @@ tr:nth-child(even) td { background:#f8fafc; }
     </select>
   </div>
 
-  <div class="field" style="min-width:240px">
-    <label>Update Data</label>
-    <input id="dataUpload" type="file" accept=".xlsx,.xls,.csv"
-      style="height:38px;padding:7px;border:1px solid #c8d4e3;border-radius:7px;background:white;">
+  <div class="field">
+    <label>Chart / Table Order</label>
+    <select id="orderMode">
+      <option value="hierarchy" selected>Hierarchy</option>
+      <option value="performance">Performance rank</option>
+    </select>
   </div>
-  <button class="secondary" onclick="loadUploadedData()">Update Dashboard</button>
-
 
   <div class="field">
     <label>Chart Font</label>
-    <select id="chartFont">
-      <option value="Arial" selected>Arial</option>
-      <option value="Aptos">Aptos</option>
-      <option value="Calibri">Calibri</option>
-      <option value="Tahoma">Tahoma</option>
-    </select>
+    <select id="chartFont"><option selected>Arial</option><option>Aptos</option><option>Calibri</option><option>Tahoma</option></select>
   </div>
-  <div class="field" style="min-width:135px">
+  <div class="field">
     <label>Base Font Size</label>
-    <select id="baseFontSize">
-      <option value="12">12 pt</option>
-      <option value="14">14 pt</option>
-      <option value="16" selected>16 pt</option>
-      <option value="18">18 pt</option>
-      <option value="20">20 pt</option>
-      <option value="22">22 pt</option>
-    </select>
+    <select id="baseFontSize"><option value="14">14 pt</option><option value="16" selected>16 pt</option><option value="18">18 pt</option><option value="20">20 pt</option><option value="22">22 pt</option></select>
   </div>
-
-  <div class="field" style="min-width:150px">
-    <label>Heatmap Cell Font</label>
-    <select id="heatCellFontSize">
-      <option value="16">16 pt</option>
-      <option value="18">18 pt</option>
-      <option value="20" selected>20 pt</option>
-      <option value="22">22 pt</option>
-      <option value="24">24 pt</option>
-      <option value="26">26 pt</option>
-      <option value="28">28 pt</option>
-    </select>
+  <div class="field">
+    <label>Values</label>
+    <select id="compositionValueMode"><option value="show" selected>Show</option><option value="hide">Hide</option></select>
   </div>
-  <div class="field" style="min-width:150px">
-    <label>Heatmap Axis Font</label>
-    <select id="heatAxisFontSize">
-      <option value="16">16 pt</option>
-      <option value="18">18 pt</option>
-      <option value="20" selected>20 pt</option>
-      <option value="22">22 pt</option>
-      <option value="24">24 pt</option>
-      <option value="26">26 pt</option>
-    </select>
-  </div>
-
-
-  <div class="field" style="min-width:155px">
+  <div class="field">
     <label>Scatter Labels</label>
-    <select id="scatterLabelMode">
-      <option value="hover" selected>Hover only</option>
-      <option value="short">Short labels</option>
-      <option value="full">Full labels</option>
-    </select>
+    <select id="scatterLabelMode"><option value="hover" selected>Hover only</option><option value="short">Short labels</option><option value="full">Full labels</option></select>
   </div>
-
-  <div class="field" style="min-width:150px">
-    <label>Composition Values</label>
-    <select id="compositionValueMode">
-      <option value="show" selected>Show values</option>
-      <option value="hide">Hide values</option>
-    </select>
-  </div>
-
-  <div class="field" style="min-width:145px">
-    <label>Scatter Font</label>
-    <select id="scatterFontSize">
-      <option value="14">14 pt</option>
-      <option value="16" selected>16 pt</option>
-      <option value="18">18 pt</option>
-      <option value="20">20 pt</option>
-      <option value="22">22 pt</option>
-      <option value="24">24 pt</option>
-    </select>
-  </div>
-
-  <div class="field" style="min-width:135px">
-    <label>PPT Title Size</label>
-    <select id="pptTitleSize">
-      <option value="22">22 pt</option>
-      <option value="24">24 pt</option>
-      <option value="26" selected>26 pt</option>
-      <option value="28">28 pt</option>
-      <option value="30">30 pt</option>
-      <option value="32">32 pt</option>
-    </select>
-  </div>
-
-  <button class="secondary" onclick="resetFilters()">Reset</button>
-  <button class="primary" onclick="exportPPT()">Export Dashboard to PPT</button>
+  <button class="secondary" onclick="resetAll()">Reset</button>
+  <button class="primary" onclick="exportPPT()">Export PPT</button>
 </div>
-
-<div id="uploadStatus" style="padding:8px 28px;background:#eef5fd;border-bottom:1px solid #d9e2ef;
-font-size:12px;color:#38506c;">Current data: uploaded sample workbook</div>
+<div id="uploadStatus" class="status">Current data: 20260619 TAA_EM_FI(1).xlsx | Hierarchy preserved from columns A:E</div>
 
 <div class="main">
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Cascading Series Selector</div>
+        <div class="panel-sub">แต่ละ Sub Category จะแสดงเฉพาะใต้ Parent ของตัวเอง เช่น Quality ใต้ HY และ IG แยกกัน</div>
+      </div>
+      <div class="quick-actions">
+        <input id="searchBox" type="text" placeholder="Search series / ticker / path" style="min-width:280px">
+        <button class="secondary" onclick="presetTopLevel()">Top Level</button>
+        <button class="secondary" onclick="presetRegions()">Region</button>
+        <button class="secondary" onclick="presetQuality()">Quality</button>
+        <button class="secondary" onclick="presetMaturity()">Maturity</button>
+        <button class="secondary" onclick="selectAllSeries()">Select Visible Series</button>
+        <button class="secondary" onclick="clearSeries()">Clear Series</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="selector-grid">
+        <div class="selector-box"><h4>1. Main Universe</h4><div id="mainBox"></div></div>
+        <div class="selector-box"><h4>2. Category Group</h4><div id="catBox"></div></div>
+        <div class="selector-box"><h4>3. Sub Universe</h4><div id="subBox"></div></div>
+        <div class="selector-box"><h4>4. Sub Category</h4><div id="subCatBox"></div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-weight:900;color:#17395e;margin-bottom:8px">5. Series / Index Selection</div>
+        <div id="seriesBox" class="series-list"></div>
+        <div id="seriesCount" class="note">–</div>
+      </div>
+    </div>
+  </section>
+
   <section class="kpis">
-    <div class="kpi"><div class="label">Selected Series</div><div class="value" id="kpiCount">–</div><div class="sub">Based on active universe</div></div>
+    <div class="kpi"><div class="label">Selected Series</div><div class="value" id="kpiCount">–</div><div class="sub">Active checkboxes</div></div>
     <div class="kpi"><div class="label">Best Performer</div><div class="value" id="kpiBest">–</div><div class="sub" id="kpiBestName">–</div></div>
     <div class="kpi"><div class="label">Worst Performer</div><div class="value" id="kpiWorst">–</div><div class="sub" id="kpiWorstName">–</div></div>
     <div class="kpi"><div class="label">Median OAD</div><div class="value" id="kpiOad">–</div><div class="sub">Years</div></div>
@@ -198,618 +172,370 @@ font-size:12px;color:#38506c;">Current data: uploaded sample workbook</div>
 
   <section class="grid">
     <div class="card full">
-      <div class="card-head"><div><div class="card-title">Performance Ranking</div><div class="card-sub">Selected horizon, sorted from highest to lowest</div></div><button onclick="downloadPlot('rankingChart','performance_ranking.png')">PNG</button></div>
+      <div class="card-head"><div><div class="card-title">Performance by Hierarchy</div><div class="card-sub">Default order follows Main Universe → Category Group → Sub Universe → Sub Category → Series</div></div><button onclick="downloadPlot('rankingChart','performance_ranking.png')">PNG</button></div>
       <div id="rankingChart" class="chart"></div>
     </div>
-
     <div class="card">
-      <div class="card-head"><div><div class="card-title">Performance vs Duration</div><div class="card-sub">OAD on x-axis; selected total return on y-axis</div></div><button onclick="downloadPlot('scatterChart','performance_vs_duration.png')">PNG</button></div>
+      <div class="card-head"><div><div class="card-title">Performance vs Duration</div><div class="card-sub">OAD on x-axis; selected return horizon on y-axis</div></div><button onclick="downloadPlot('scatterChart','performance_vs_duration.png')">PNG</button></div>
       <div id="scatterChart" class="chart"></div>
     </div>
-
     <div class="card">
       <div class="card-head"><div><div class="card-title">MTD Return Composition</div><div class="card-sub">Price, coupon, currency and total return</div></div><button onclick="downloadPlot('compositionChart','return_composition.png')">PNG</button></div>
       <div id="compositionChart" class="chart"></div>
     </div>
-
     <div class="card full">
       <div class="card-head"><div><div class="card-title">Multi-Period Performance Heatmap</div><div class="card-sub">1D, MTD, YTD, 3M, 6M and 12M total returns</div></div><button onclick="downloadPlot('heatmapChart','performance_heatmap.png')">PNG</button></div>
       <div id="heatmapChart" class="chart"></div>
     </div>
-
     <div class="card full">
-      <div class="card-head"><div><div class="card-title">Selected Universe Table</div><div class="card-sub">Ticker, OAD and performance metrics</div></div></div>
+      <div class="card-head"><div><div class="card-title">Selected Data Table</div><div class="card-sub">Hierarchy is preserved in separate columns and full path</div></div></div>
       <div class="table-wrap"><table id="dataTable"></table></div>
     </div>
   </section>
-  <div class="note">Font controls above change chart fonts before PNG/PPT export. Heatmap Cell Font and Heatmap Axis Font directly control the numbers and labels inside the heatmap. Long category labels in bar charts are wrapped onto multiple lines. Scatter labels default to Hover only to prevent collisions; choose Short labels or Full labels when needed. In MTD Return Composition, you can now toggle Composition Values to show the numbers directly on each bar and on the total-return marker. Slide titles and source text remain editable in PowerPoint; chart labels are embedded in high-resolution chart images. The uploaded workbook does not contain a separate Yield-to-Maturity field or long annual history. This dashboard therefore uses the fields that are available: OAD and total-return horizons, plus MTD return decomposition.</div>
+  <div class="note">This version uses composite parent keys. Numbers in charts and tables default to hierarchy order: Main Universe → Category Group → Sub Universe → Sub Category → Series. Use Chart / Table Order = Performance rank only when you want a high-to-low ranking.</div>
 </div>
 
 <script>
-let DATA = [{"display_name": "EM Hard Currency Aggregate", "root_label": "EM Hard Currency Aggregate", "parent_label": null, "path": "EM Hard Currency Aggregate", "level_1": "EM Hard Currency Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "LG20TRUU", "bbg_index": "LG20TRUU  Index", "last_update": "2026-06-18", "count": 2508.0, "oad": 5.781207, "mtd_px_rtn": 0.284763, "mtd_cpn_rtn": 0.261108, "mtd_curr_rtn": -0.227147, "mtd_oth_rtn": 0.0003319999999999, "mtd_tot_rtn": 0.319056, "1d_tot_rtn": -0.038085, "mtd_tot_rtn_dup": 0.319056, "ytd_tot_rtn": 1.672679, "3m_tot_rtn": 2.314729, "6m_tot_rtn": 1.879061, "12m_tot_rtn": 8.528558, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM USD Aggregate", "root_label": "EM USD Aggregate", "parent_label": null, "path": "EM USD Aggregate", "level_1": "EM USD Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "EMUSTRUU", "bbg_index": "EMUSTRUU  Index", "last_update": "2026-06-18", "count": 2149.0, "oad": 5.865315, "mtd_px_rtn": 0.298358, "mtd_cpn_rtn": 0.274543, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000388, "mtd_tot_rtn": 0.573289, "1d_tot_rtn": 0.107085, "mtd_tot_rtn_dup": 0.573289, "ytd_tot_rtn": 2.038226, "3m_tot_rtn": 2.427778, "6m_tot_rtn": 2.205896, "12m_tot_rtn": 9.20396, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM USD Aggregate: LATAM", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD Aggregate: LATAM", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD Aggregate: LATAM", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BSELTRUU", "bbg_index": "BSELTRUU  Index", "last_update": "2026-06-18", "count": 624.0, "oad": 6.403636, "mtd_px_rtn": 0.824035, "mtd_cpn_rtn": 0.292116, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0009320000000001, "mtd_tot_rtn": 1.117083, "1d_tot_rtn": null, "mtd_tot_rtn_dup": null, "ytd_tot_rtn": null, "3m_tot_rtn": null, "6m_tot_rtn": null, "12m_tot_rtn": null, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD Aggregate: Asia", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD Aggregate: Asia", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD Aggregate: Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I00020US", "bbg_index": "I00020US  Index", "last_update": "2026-06-18", "count": 690.0, "oad": 5.078546, "mtd_px_rtn": -0.196577, "mtd_cpn_rtn": 0.232832, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0003279999999999, "mtd_tot_rtn": 0.036583, "1d_tot_rtn": 0.1318, "mtd_tot_rtn_dup": 0.036583, "ytd_tot_rtn": 0.937123, "3m_tot_rtn": 0.959815, "6m_tot_rtn": 1.004092, "12m_tot_rtn": 5.849733, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD EMEA", "root_label": "EM USD Aggregate", "parent_label": "Region", "path": "EM USD Aggregate > Region > EM USD EMEA", "level_1": "EM USD Aggregate", "level_2": "Region", "level_3": "EM USD EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I13292US", "bbg_index": "I13292US  Index", "last_update": "2026-06-18", "count": 835.0, "oad": 5.862499, "mtd_px_rtn": 0.155022, "mtd_cpn_rtn": 0.283096, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 9.999999999732443e-07, "mtd_tot_rtn": 0.438119, "1d_tot_rtn": 0.079029, "mtd_tot_rtn_dup": 0.438119, "ytd_tot_rtn": 1.41614, "3m_tot_rtn": 2.420735, "6m_tot_rtn": 1.608914, "12m_tot_rtn": 8.909045, "is_top_level": false, "group": "Region"}, {"display_name": "EM USD Aggregate High Yield", "root_label": "EM USD Aggregate", "parent_label": "Broad Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BEBGTRUU", "bbg_index": "BEBGTRUU  Index", "last_update": "2026-06-18", "count": 758.0, "oad": 5.084627, "mtd_px_rtn": 0.819071, "mtd_cpn_rtn": 0.325955, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0002039999999998, "mtd_tot_rtn": 1.14523, "1d_tot_rtn": 0.079476, "mtd_tot_rtn_dup": 1.14523, "ytd_tot_rtn": 4.330271, "3m_tot_rtn": 4.525838, "6m_tot_rtn": 4.657477, "12m_tot_rtn": 14.310519, "is_top_level": false, "group": "Quality"}, {"display_name": "Ba", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ba", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Ba", "hierarchy_depth": 5, "ticker": "I05040US", "bbg_index": "I05040US  Index", "last_update": "2026-06-18", "count": 439.0, "oad": 5.596485, "mtd_px_rtn": 0.707617, "mtd_cpn_rtn": 0.322694, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000367, "mtd_tot_rtn": 1.030678, "1d_tot_rtn": 0.088152, "mtd_tot_rtn_dup": 1.030678, "ytd_tot_rtn": 2.855946, "3m_tot_rtn": 3.377899, "6m_tot_rtn": 3.1042, "12m_tot_rtn": 10.484203, "is_top_level": false, "group": "Quality"}, {"display_name": "B", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > B", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "B", "hierarchy_depth": 5, "ticker": "I05039US", "bbg_index": "I05039US  Index", "last_update": "2026-06-18", "count": 228.0, "oad": 4.527713, "mtd_px_rtn": 0.234573, "mtd_cpn_rtn": 0.374104, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.608677, "1d_tot_rtn": 0.051643, "mtd_tot_rtn_dup": 0.608677, "ytd_tot_rtn": 3.978518, "3m_tot_rtn": 4.481471, "6m_tot_rtn": 4.451375, "12m_tot_rtn": 16.22266, "is_top_level": false, "group": "Quality"}, {"display_name": "Caa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Caa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Caa", "hierarchy_depth": 5, "ticker": "I12882US", "bbg_index": "I12882US  Index", "last_update": "2026-06-18", "count": 54.0, "oad": 4.644781, "mtd_px_rtn": 2.591645, "mtd_cpn_rtn": 0.271974, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": -1.000000000139778e-06, "mtd_tot_rtn": 2.863618, "1d_tot_rtn": 0.136503, "mtd_tot_rtn_dup": 2.863618, "ytd_tot_rtn": 9.967754, "3m_tot_rtn": 9.324089, "6m_tot_rtn": 10.441645, "12m_tot_rtn": 26.136494, "is_top_level": false, "group": "Quality"}, {"display_name": "Ca-D", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ca-D", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "Ca-D", "hierarchy_depth": 5, "ticker": "I12883US", "bbg_index": "I12883US  Index", "last_update": "2026-06-18", "count": 20.0, "oad": 3.455007, "mtd_px_rtn": -3.881934, "mtd_cpn_rtn": 0.248336, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -3.633598, "1d_tot_rtn": -0.501992, "mtd_tot_rtn_dup": -3.633598, "ytd_tot_rtn": 27.642825, "3m_tot_rtn": 7.14053, "6m_tot_rtn": 27.765523, "12m_tot_rtn": 43.368452, "is_top_level": false, "group": "Quality"}, {"display_name": "NR", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > NR", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate High Yield", "level_4": "Quality", "level_5": "NR", "hierarchy_depth": 5, "ticker": "I12884US", "bbg_index": "I12884US  Index", "last_update": "2026-06-18", "count": 17.0, "oad": 2.756409, "mtd_px_rtn": 0.415536, "mtd_cpn_rtn": 0.265898, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.681434, "1d_tot_rtn": 0.051262, "mtd_tot_rtn_dup": 0.681434, "ytd_tot_rtn": 2.585476, "3m_tot_rtn": 1.114825, "6m_tot_rtn": 2.618842, "12m_tot_rtn": 6.627602, "is_top_level": false, "group": "Quality"}, {"display_name": "EM USD Aggregate Investment Grade", "root_label": "EM USD Aggregate", "parent_label": "Broad Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04276US", "bbg_index": "I04276US  Index", "last_update": "2026-06-18", "count": 1391.0, "oad": 6.331079, "mtd_px_rtn": -0.009507, "mtd_cpn_rtn": 0.244146, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0004959999999999, "mtd_tot_rtn": 0.235135, "1d_tot_rtn": 0.123563, "mtd_tot_rtn_dup": 0.235135, "ytd_tot_rtn": 0.728716, "3m_tot_rtn": 1.228105, "6m_tot_rtn": 0.80568, "12m_tot_rtn": 6.308199, "is_top_level": false, "group": "Quality"}, {"display_name": "Aaa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aaa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Aaa", "hierarchy_depth": 5, "ticker": "I12878US", "bbg_index": "I12878US  Index", "last_update": "2026-06-18", "count": 0.0, "oad": 0.0, "mtd_px_rtn": 0.0, "mtd_cpn_rtn": 0.0, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.0, "1d_tot_rtn": 0.0, "mtd_tot_rtn_dup": 0.0, "ytd_tot_rtn": 0.0, "3m_tot_rtn": 0.0, "6m_tot_rtn": 0.0, "12m_tot_rtn": 0.0, "is_top_level": false, "group": "Quality"}, {"display_name": "Aa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Aa", "hierarchy_depth": 5, "ticker": "I12879US", "bbg_index": "I12879US  Index", "last_update": "2026-06-18", "count": 203.0, "oad": 6.046742, "mtd_px_rtn": -0.103766, "mtd_cpn_rtn": 0.215372, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.111606, "1d_tot_rtn": 0.081034, "mtd_tot_rtn_dup": 0.111606, "ytd_tot_rtn": 0.160598, "3m_tot_rtn": 0.909187, "6m_tot_rtn": 0.226934, "12m_tot_rtn": 5.140605, "is_top_level": false, "group": "Quality"}, {"display_name": "A", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > A", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "A", "hierarchy_depth": 5, "ticker": "I12880US", "bbg_index": "I12880US  Index", "last_update": "2026-06-18", "count": 457.0, "oad": 6.160115, "mtd_px_rtn": -0.012871, "mtd_cpn_rtn": 0.233975, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.221105, "1d_tot_rtn": 0.12092, "mtd_tot_rtn_dup": 0.221105, "ytd_tot_rtn": 0.862277, "3m_tot_rtn": 1.161408, "6m_tot_rtn": 0.914339, "12m_tot_rtn": 6.066318, "is_top_level": false, "group": "Quality"}, {"display_name": "Baa", "root_label": "EM USD Aggregate", "parent_label": "Quality", "path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Baa", "level_1": "EM USD Aggregate", "level_2": "Broad Quality", "level_3": "EM USD Aggregate Investment Grade", "level_4": "Quality", "level_5": "Baa", "hierarchy_depth": 5, "ticker": "I12881US", "bbg_index": "I12881US  Index", "last_update": "2026-06-18", "count": 731.0, "oad": 6.549021, "mtd_px_rtn": 0.023472, "mtd_cpn_rtn": 0.260962, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0010239999999999, "mtd_tot_rtn": 0.285458, "1d_tot_rtn": 0.139257, "mtd_tot_rtn_dup": 0.285458, "ytd_tot_rtn": 0.817322, "3m_tot_rtn": 1.38212, "6m_tot_rtn": 0.916137, "12m_tot_rtn": 6.884788, "is_top_level": false, "group": "Quality"}, {"display_name": "1-3 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 1-3 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "1-3 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12885US", "bbg_index": "I12885US  Index", "last_update": "2026-06-18", "count": 484.0, "oad": 1.707037, "mtd_px_rtn": -0.125532, "mtd_cpn_rtn": 0.253116, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.00039, "mtd_tot_rtn": 0.127974, "1d_tot_rtn": -0.005461, "mtd_tot_rtn_dup": 0.127974, "ytd_tot_rtn": 1.736417, "3m_tot_rtn": 1.235617, "6m_tot_rtn": 1.882142, "12m_tot_rtn": 5.299432, "is_top_level": false, "group": "Maturity"}, {"display_name": "3-5 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 3-5 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "3-5 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12886US", "bbg_index": "I12886US  Index", "last_update": "2026-06-18", "count": 581.0, "oad": 3.232472, "mtd_px_rtn": -0.079371, "mtd_cpn_rtn": 0.249588, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.170218, "1d_tot_rtn": 0.026088, "mtd_tot_rtn_dup": 0.170218, "ytd_tot_rtn": 1.646528, "3m_tot_rtn": 1.464655, "6m_tot_rtn": 1.81512, "12m_tot_rtn": 7.023636, "is_top_level": false, "group": "Maturity"}, {"display_name": "5-7 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 5-7 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "5-7 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12887US", "bbg_index": "I12887US  Index", "last_update": "2026-06-18", "count": 267.0, "oad": 4.634276, "mtd_px_rtn": 0.143369, "mtd_cpn_rtn": 0.278951, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.42232, "1d_tot_rtn": 0.058605, "mtd_tot_rtn_dup": 0.42232, "ytd_tot_rtn": 2.018405, "3m_tot_rtn": 2.213419, "6m_tot_rtn": 2.215044, "12m_tot_rtn": 8.397587, "is_top_level": false, "group": "Maturity"}, {"display_name": "7-10 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 7-10 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "7-10 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12888US", "bbg_index": "I12888US  Index", "last_update": "2026-06-18", "count": 306.0, "oad": 6.234166, "mtd_px_rtn": 0.415509, "mtd_cpn_rtn": 0.286434, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.001753, "mtd_tot_rtn": 0.703696, "1d_tot_rtn": 0.083875, "mtd_tot_rtn_dup": 0.703696, "ytd_tot_rtn": 2.180136, "3m_tot_rtn": 2.80147, "6m_tot_rtn": 2.417071, "12m_tot_rtn": 10.320902, "is_top_level": false, "group": "Maturity"}, {"display_name": "10-20 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 10-20 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "10-20 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12889US", "bbg_index": "I12889US  Index", "last_update": "2026-06-18", "count": 216.0, "oad": 8.661787, "mtd_px_rtn": 1.018217, "mtd_cpn_rtn": 0.301592, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.319809, "1d_tot_rtn": 0.202739, "mtd_tot_rtn_dup": 1.319809, "ytd_tot_rtn": 2.820324, "3m_tot_rtn": 3.877526, "6m_tot_rtn": 3.014126, "12m_tot_rtn": 13.117334, "is_top_level": false, "group": "Maturity"}, {"display_name": "20+ Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 20+ Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "20+ Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I12890US", "bbg_index": "I12890US  Index", "last_update": "2026-06-18", "count": 295.0, "oad": 12.99504, "mtd_px_rtn": 0.804648, "mtd_cpn_rtn": 0.300076, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.104724, "1d_tot_rtn": 0.347536, "mtd_tot_rtn_dup": 1.104724, "ytd_tot_rtn": 2.303947, "3m_tot_rtn": 3.937807, "6m_tot_rtn": 2.383094, "12m_tot_rtn": 13.471952, "is_top_level": false, "group": "Maturity"}, {"display_name": "1-5 Year", "root_label": "EM USD Aggregate", "parent_label": "Maturity", "path": "EM USD Aggregate > Maturity > 1-5 Year", "level_1": "EM USD Aggregate", "level_2": "Maturity", "level_3": "1-5 Year", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "BEM5TRUU", "bbg_index": "BEM5TRUU  Index", "last_update": "2026-06-18", "count": 1065.0, "oad": 2.538451, "mtd_px_rtn": -0.100377, "mtd_cpn_rtn": 0.251194, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.000177, "mtd_tot_rtn": 0.150994, "1d_tot_rtn": 0.011732, "mtd_tot_rtn_dup": 0.150994, "ytd_tot_rtn": 1.682698, "3m_tot_rtn": 1.363289, "6m_tot_rtn": 1.841321, "12m_tot_rtn": 6.222968, "is_top_level": false, "group": "Maturity"}, {"display_name": "EM Pan-European Aggregate", "root_label": "EM Pan-European Aggregate", "parent_label": null, "path": "EM Pan-European Aggregate", "level_1": "EM Pan-European Aggregate", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I04321EU", "bbg_index": "I04321EU  Index", "last_update": "2026-06-18", "count": 359.0, "oad": 5.271543, "mtd_px_rtn": 0.203826, "mtd_cpn_rtn": 0.181128, "mtd_curr_rtn": -0.000863, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.384091, "1d_tot_rtn": -0.01592, "mtd_tot_rtn_dup": 0.384091, "ytd_tot_rtn": 1.842981, "3m_tot_rtn": 1.890018, "6m_tot_rtn": 2.125278, "12m_tot_rtn": 4.854005, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Pan-European Aggregate Asia", "root_label": "EM Pan-European Aggregate", "parent_label": "Region", "path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate Asia", "level_1": "EM Pan-European Aggregate", "level_2": "Region", "level_3": "EM Pan-European Aggregate Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04337EU", "bbg_index": "I04337EU  Index", "last_update": "2026-06-18", "count": 60.0, "oad": 4.716643, "mtd_px_rtn": -0.093472, "mtd_cpn_rtn": 0.121222, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.02775, "1d_tot_rtn": 0.024911, "mtd_tot_rtn_dup": 0.02775, "ytd_tot_rtn": 0.306104, "3m_tot_rtn": 0.553858, "6m_tot_rtn": 0.412246, "12m_tot_rtn": 1.848553, "is_top_level": false, "group": "Region"}, {"display_name": "EM Pan-European Aggregate LATAM", "root_label": "EM Pan-European Aggregate", "parent_label": "Region", "path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate LATAM", "level_1": "EM Pan-European Aggregate", "level_2": "Region", "level_3": "EM Pan-European Aggregate LATAM", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I04338EU", "bbg_index": "I04338EU  Index", "last_update": "2026-06-18", "count": 62.0, "oad": 5.982765, "mtd_px_rtn": 0.622963, "mtd_cpn_rtn": 0.184036, "mtd_curr_rtn": -0.00426, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.802739, "1d_tot_rtn": -0.002094, "mtd_tot_rtn_dup": 0.802739, "ytd_tot_rtn": 2.43221, "3m_tot_rtn": 2.535309, "6m_tot_rtn": 2.690849, "12m_tot_rtn": 5.480813, "is_top_level": false, "group": "Region"}, {"display_name": "EM Local Currency Govt Universal", "root_label": "EM Local Currency Govt Universal", "parent_label": null, "path": "EM Local Currency Govt Universal", "level_1": "EM Local Currency Govt Universal", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I20258US", "bbg_index": "I20258US  Index", "last_update": "2026-06-18", "count": 1022.0, "oad": 6.669889, "mtd_px_rtn": 0.174917, "mtd_cpn_rtn": 0.202793, "mtd_curr_rtn": -0.214636, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.163074, "1d_tot_rtn": -0.322301, "mtd_tot_rtn_dup": 0.163074, "ytd_tot_rtn": 1.492858, "3m_tot_rtn": 1.524626, "6m_tot_rtn": 2.364551, "12m_tot_rtn": 3.999698, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Americas", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM Americas", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM Americas", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20259US", "bbg_index": "I20259US  Index", "last_update": "2026-06-18", "count": 85.0, "oad": 4.236903, "mtd_px_rtn": 0.908513, "mtd_cpn_rtn": 0.346299, "mtd_curr_rtn": 0.187123, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 1.441935, "1d_tot_rtn": -1.016943, "mtd_tot_rtn_dup": 1.441935, "ytd_tot_rtn": 9.431179, "3m_tot_rtn": 6.026326, "6m_tot_rtn": 10.267315, "12m_tot_rtn": 21.071263, "is_top_level": false, "group": "Region"}, {"display_name": "EM EMEA", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM EMEA", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20266US", "bbg_index": "I20266US  Index", "last_update": "2026-06-18", "count": 225.0, "oad": 4.904752, "mtd_px_rtn": 0.591216, "mtd_cpn_rtn": 0.365275, "mtd_curr_rtn": -1.651096, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.694605, "1d_tot_rtn": -1.128345, "mtd_tot_rtn_dup": -0.694605, "ytd_tot_rtn": 3.22061, "3m_tot_rtn": 5.738289, "6m_tot_rtn": 4.564982, "12m_tot_rtn": 18.03604, "is_top_level": false, "group": "Region"}, {"display_name": "EM Asia", "root_label": "EM Local Currency Govt Universal", "parent_label": "Region", "path": "EM Local Currency Govt Universal > Region > EM Asia", "level_1": "EM Local Currency Govt Universal", "level_2": "Region", "level_3": "EM Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I20277US", "bbg_index": "I20277US  Index", "last_update": "2026-06-18", "count": 712.0, "oad": 7.157749, "mtd_px_rtn": 0.043347, "mtd_cpn_rtn": 0.166497, "mtd_curr_rtn": -0.069849, "mtd_oth_rtn": 1.000000000001e-06, "mtd_tot_rtn": 0.139996, "1d_tot_rtn": -0.142292, "mtd_tot_rtn_dup": 0.139996, "ytd_tot_rtn": 0.474162, "3m_tot_rtn": 0.539803, "6m_tot_rtn": 1.290601, "12m_tot_rtn": 0.912344, "is_top_level": false, "group": "Region"}, {"display_name": "EM Local Currency Govt", "root_label": "EM Local Currency Govt", "parent_label": null, "path": "EM Local Currency Govt", "level_1": "EM Local Currency Govt", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I20344US", "bbg_index": "I20344US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.115069, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM EMEA", "root_label": "EM Local Currency Govt", "parent_label": "Region", "path": "EM Local Currency Govt > Region > EM EMEA", "level_1": "EM Local Currency Govt", "level_2": "Region", "level_3": "EM EMEA", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I30744US", "bbg_index": "I30744US  Index", "last_update": "2026-06-18", "count": 139.0, "oad": 5.131704, "mtd_px_rtn": 0.721747, "mtd_cpn_rtn": 0.321998, "mtd_curr_rtn": -2.06292, "mtd_oth_rtn": -9.999999999177334e-07, "mtd_tot_rtn": -1.019176, "1d_tot_rtn": -1.199781, "mtd_tot_rtn_dup": -1.019176, "ytd_tot_rtn": 3.041551, "3m_tot_rtn": 5.757123, "6m_tot_rtn": 4.400019, "12m_tot_rtn": 17.371487, "is_top_level": false, "group": "Region"}, {"display_name": "EM Asia", "root_label": "EM Local Currency Govt", "parent_label": "Region", "path": "EM Local Currency Govt > Region > EM Asia", "level_1": "EM Local Currency Govt", "level_2": "Region", "level_3": "EM Asia", "level_4": null, "level_5": null, "hierarchy_depth": 3, "ticker": "I22831US", "bbg_index": "I22831US  Index", "last_update": "2026-06-18", "count": 490.0, "oad": 7.067959, "mtd_px_rtn": -0.042349, "mtd_cpn_rtn": 0.148627, "mtd_curr_rtn": -0.135406, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.029128, "1d_tot_rtn": -0.203069, "mtd_tot_rtn_dup": -0.029128, "ytd_tot_rtn": 0.982338, "3m_tot_rtn": 0.706404, "6m_tot_rtn": 1.820335, "12m_tot_rtn": 1.902107, "is_top_level": false, "group": "Region"}, {"display_name": "Investment Grade", "root_label": "Broad Quality", "parent_label": "Broad Quality", "path": "Broad Quality > Investment Grade", "level_1": "Broad Quality", "level_2": "Investment Grade", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22832US", "bbg_index": "I22832US  Index", "last_update": "2026-06-18", "count": 642.0, "oad": 6.784374, "mtd_px_rtn": 0.052643, "mtd_cpn_rtn": 0.164041, "mtd_curr_rtn": -0.316025, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.099341, "1d_tot_rtn": -0.306219, "mtd_tot_rtn_dup": -0.099341, "ytd_tot_rtn": 1.435431, "3m_tot_rtn": 1.321179, "6m_tot_rtn": 2.23842, "12m_tot_rtn": 3.672856, "is_top_level": false, "group": "Quality"}, {"display_name": "High Yield", "root_label": "Broad Quality", "parent_label": "Broad Quality", "path": "Broad Quality > High Yield", "level_1": "Broad Quality", "level_2": "High Yield", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22836US", "bbg_index": "I22836US  Index", "last_update": "2026-06-18", "count": 71.0, "oad": 4.209638, "mtd_px_rtn": 1.115747, "mtd_cpn_rtn": 0.44763, "mtd_curr_rtn": -0.264446, "mtd_oth_rtn": 9.999999999177334e-07, "mtd_tot_rtn": 1.298932, "1d_tot_rtn": -1.412307, "mtd_tot_rtn_dup": 1.298932, "ytd_tot_rtn": 8.648955, "3m_tot_rtn": 6.817139, "6m_tot_rtn": 10.776715, "12m_tot_rtn": 26.09632, "is_top_level": false, "group": "Quality"}, {"display_name": "Intermediate", "root_label": "Broad Maturity", "parent_label": "Broad Maturity", "path": "Broad Maturity > Intermediate", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22842US", "bbg_index": "I22842US  Index", "last_update": "2026-06-18", "count": 469.0, "oad": 4.071968, "mtd_px_rtn": 0.135432, "mtd_cpn_rtn": 0.175108, "mtd_curr_rtn": -0.275885, "mtd_oth_rtn": 9.999999999524278e-07, "mtd_tot_rtn": 0.034656, "1d_tot_rtn": -0.38094, "mtd_tot_rtn_dup": 0.034656, "ytd_tot_rtn": 2.869944, "3m_tot_rtn": 1.957391, "6m_tot_rtn": 3.770945, "12m_tot_rtn": 7.148981, "is_top_level": false, "group": "Maturity"}, {"display_name": "1-3 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Intermediate > Maturity > 1-3 Year", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": "Maturity", "level_4": "1-3 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22843US", "bbg_index": "I22843US  Index", "last_update": "2026-06-18", "count": 154.0, "oad": 1.83016, "mtd_px_rtn": 0.000249, "mtd_cpn_rtn": 0.153335, "mtd_curr_rtn": -0.33767, "mtd_oth_rtn": 1.0000000000287557e-06, "mtd_tot_rtn": -0.184085, "1d_tot_rtn": -0.385584, "mtd_tot_rtn_dup": -0.184085, "ytd_tot_rtn": 3.254821, "3m_tot_rtn": 1.779107, "6m_tot_rtn": 4.173778, "12m_tot_rtn": 7.616959, "is_top_level": false, "group": "Maturity"}, {"display_name": "5-7 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Intermediate > Maturity > 5-7 Year", "level_1": "Broad Maturity", "level_2": "Intermediate", "level_3": "Maturity", "level_4": "5-7 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22845US", "bbg_index": "I22845US  Index", "last_update": "2026-06-18", "count": 89.0, "oad": 5.313994, "mtd_px_rtn": 0.266073, "mtd_cpn_rtn": 0.178163, "mtd_curr_rtn": -0.144939, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.299297, "1d_tot_rtn": -0.346837, "mtd_tot_rtn_dup": 0.299297, "ytd_tot_rtn": 3.52846, "3m_tot_rtn": 2.38292, "6m_tot_rtn": 4.385363, "12m_tot_rtn": 7.633571, "is_top_level": false, "group": "Maturity"}, {"display_name": "Long", "root_label": "Broad Maturity", "parent_label": "Broad Maturity", "path": "Broad Maturity > Long", "level_1": "Broad Maturity", "level_2": "Long", "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 2, "ticker": "I22847US", "bbg_index": "I22847US  Index", "last_update": "2026-06-18", "count": 244.0, "oad": 14.831805, "mtd_px_rtn": 0.1179, "mtd_cpn_rtn": 0.217438, "mtd_curr_rtn": -0.430859, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.095521, "1d_tot_rtn": -0.419622, "mtd_tot_rtn_dup": -0.095521, "ytd_tot_rtn": -0.831074, "3m_tot_rtn": 0.963081, "6m_tot_rtn": 0.044861, "12m_tot_rtn": -0.786289, "is_top_level": false, "group": "Maturity"}, {"display_name": "10-20 Year", "root_label": "Broad Maturity", "parent_label": "Maturity", "path": "Broad Maturity > Long > Maturity > 10-20 Year", "level_1": "Broad Maturity", "level_2": "Long", "level_3": "Maturity", "level_4": "10-20 Year", "level_5": null, "hierarchy_depth": 4, "ticker": "I22848US", "bbg_index": "I22848US  Index", "last_update": "2026-06-18", "count": 129.0, "oad": 9.93511, "mtd_px_rtn": 0.467195, "mtd_cpn_rtn": 0.26424, "mtd_curr_rtn": -0.689555, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.04188, "1d_tot_rtn": -0.634848, "mtd_tot_rtn_dup": 0.04188, "ytd_tot_rtn": -0.676415, "3m_tot_rtn": 1.178911, "6m_tot_rtn": 0.285973, "12m_tot_rtn": 5.132176, "is_top_level": false, "group": "Maturity"}, {"display_name": "EM USD Sov + Sov Owned", "root_label": "EM USD Sov + Sov Owned", "parent_label": null, "path": "EM USD Sov + Sov Owned", "level_1": "EM USD Sov + Sov Owned", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I38156US", "bbg_index": "I38156US  Index", "last_update": "2026-06-18", "count": 693.0, "oad": 6.769494, "mtd_px_rtn": 0.477765, "mtd_cpn_rtn": 0.277346, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.755111, "1d_tot_rtn": 0.126134, "mtd_tot_rtn_dup": 0.755111, "ytd_tot_rtn": 2.449833, "3m_tot_rtn": 3.122914, "6m_tot_rtn": 2.648084, "12m_tot_rtn": 11.739017, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Asia USD Credit", "root_label": "EM Asia USD Credit", "parent_label": null, "path": "EM Asia USD Credit", "level_1": "EM Asia USD Credit", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "BEUCTRUU", "bbg_index": "BEUCTRUU  Index", "last_update": "2026-06-18", "count": 1208.0, "oad": 4.851958, "mtd_px_rtn": -0.203972, "mtd_cpn_rtn": 0.23632, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0002449999999999, "mtd_tot_rtn": 0.032593, "1d_tot_rtn": 0.125435, "mtd_tot_rtn_dup": 0.032593, "ytd_tot_rtn": 0.967304, "3m_tot_rtn": 0.886168, "6m_tot_rtn": 1.036721, "12m_tot_rtn": 5.830264, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM GCC Credit Benchmark", "root_label": "EM GCC Credit Benchmark", "parent_label": null, "path": "EM GCC Credit Benchmark", "level_1": "EM GCC Credit Benchmark", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I23117US", "bbg_index": "I23117US  Index", "last_update": "2026-06-18", "count": 477.0, "oad": 6.107523, "mtd_px_rtn": 0.013797, "mtd_cpn_rtn": 0.247848, "mtd_curr_rtn": -0.039675, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.22197, "1d_tot_rtn": 0.014053, "mtd_tot_rtn_dup": 0.22197, "ytd_tot_rtn": 0.443919, "3m_tot_rtn": 1.687698, "6m_tot_rtn": 0.546823, "12m_tot_rtn": 5.831061, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Local Government + China", "root_label": "EM Local Government + China", "parent_label": null, "path": "EM Local Government + China", "level_1": "EM Local Government + China", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I32750US", "bbg_index": "I32750US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.115069, "is_top_level": true, "group": "Top Level"}, {"display_name": "EM Local Government + India FAR", "root_label": "EM Local Government + India FAR", "parent_label": null, "path": "EM Local Government + India FAR", "level_1": "EM Local Government + India FAR", "level_2": null, "level_3": null, "level_4": null, "level_5": null, "hierarchy_depth": 1, "ticker": "I36368US", "bbg_index": "I36368US  Index", "last_update": "2026-06-18", "count": 713.0, "oad": 6.591351, "mtd_px_rtn": 0.131323, "mtd_cpn_rtn": 0.185029, "mtd_curr_rtn": -0.312208, "mtd_oth_rtn": 1.000000000019215e-06, "mtd_tot_rtn": 0.004145, "1d_tot_rtn": -0.39, "mtd_tot_rtn_dup": 0.004145, "ytd_tot_rtn": 1.959383, "3m_tot_rtn": 1.720196, "6m_tot_rtn": 2.854288, "12m_tot_rtn": 5.03225, "is_top_level": true, "group": "Top Level"}];
+let DATA = [{"row": 3, "main_universe": "EM Hard Currency Aggregate", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Hard Currency Aggregate", "full_path": "EM Hard Currency Aggregate", "depth": 1, "ticker": "LG20TRUU", "bbg_index": "LG20TRUU  Index", "last_update": "14/07/2026", "count": 2508.0, "oad": 5.744832, "mtd_px_rtn": -0.742215, "mtd_cpn_rtn": 0.202629, "mtd_curr_rtn": 0.015664, "mtd_oth_rtn": 0.007978999999999847, "mtd_tot_rtn": -0.515943, "1d_tot_rtn": 0.050348, "ytd_tot_rtn": 1.116216, "3m_tot_rtn": 0.122456, "6m_tot_rtn": 1.126652, "12m_tot_rtn": 6.751358}, {"row": 4, "main_universe": "EM USD Aggregate", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM USD Aggregate", "full_path": "EM USD Aggregate", "depth": 1, "ticker": "EMUSTRUU", "bbg_index": "EMUSTRUU  Index", "last_update": "14/07/2026", "count": 2149.0, "oad": 5.829566, "mtd_px_rtn": -0.726165, "mtd_cpn_rtn": 0.21323, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.00871299999999997, "mtd_tot_rtn": -0.504222, "1d_tot_rtn": 0.02474, "ytd_tot_rtn": 1.510749, "3m_tot_rtn": 0.508515, "6m_tot_rtn": 1.448056, "12m_tot_rtn": 7.599917}, {"row": 6, "main_universe": "EM USD Aggregate", "category_group": "Region", "sub_universe": "EM USD Aggregate: LATAM", "sub_category": null, "series": null, "display_name": "EM USD Aggregate: LATAM", "full_path": "EM USD Aggregate > Region > EM USD Aggregate: LATAM", "depth": 3, "ticker": "BSELTRUU", "bbg_index": "BSELTRUU  Index", "last_update": "14/07/2026", "count": 624.0, "oad": 6.502491, "mtd_px_rtn": -0.660266, "mtd_cpn_rtn": 0.226539, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.025947000000000053, "mtd_tot_rtn": -0.40778, "1d_tot_rtn": null, "ytd_tot_rtn": null, "3m_tot_rtn": null, "6m_tot_rtn": null, "12m_tot_rtn": null}, {"row": 7, "main_universe": "EM USD Aggregate", "category_group": "Region", "sub_universe": "EM USD Aggregate: Asia", "sub_category": null, "series": null, "display_name": "EM USD Aggregate: Asia", "full_path": "EM USD Aggregate > Region > EM USD Aggregate: Asia", "depth": 3, "ticker": "I00020US", "bbg_index": "I00020US  Index", "last_update": "14/07/2026", "count": 690.0, "oad": 5.051238, "mtd_px_rtn": -0.704664, "mtd_cpn_rtn": 0.181906, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.522758, "1d_tot_rtn": 0.010323, "ytd_tot_rtn": 0.502415, "3m_tot_rtn": -0.228388, "6m_tot_rtn": 0.326199, "12m_tot_rtn": 4.759921}, {"row": 8, "main_universe": "EM USD Aggregate", "category_group": "Region", "sub_universe": "EM USD EMEA", "sub_category": null, "series": null, "display_name": "EM USD EMEA", "full_path": "EM USD Aggregate > Region > EM USD EMEA", "depth": 3, "ticker": "I13292US", "bbg_index": "I13292US  Index", "last_update": "14/07/2026", "count": 835.0, "oad": 5.742518, "mtd_px_rtn": -0.785987, "mtd_cpn_rtn": 0.219892, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0006030000000000202, "mtd_tot_rtn": -0.565492, "1d_tot_rtn": -0.042254, "ytd_tot_rtn": 0.817067, "3m_tot_rtn": 0.476661, "6m_tot_rtn": 0.905353, "12m_tot_rtn": 6.996883}, {"row": 10, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": null, "series": null, "display_name": "EM USD Aggregate High Yield", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield", "depth": 3, "ticker": "BEBGTRUU", "bbg_index": "BEBGTRUU  Index", "last_update": "14/07/2026", "count": 758.0, "oad": 5.099094, "mtd_px_rtn": -0.481226, "mtd_cpn_rtn": 0.254094, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.024271999999999988, "mtd_tot_rtn": -0.20286, "1d_tot_rtn": 0.024819, "ytd_tot_rtn": 4.07632, "3m_tot_rtn": 1.867994, "6m_tot_rtn": 3.941617, "12m_tot_rtn": 12.462525}, {"row": 12, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": "Quality", "series": "Ba", "display_name": "Ba", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ba", "depth": 5, "ticker": "I05040US", "bbg_index": "I05040US  Index", "last_update": "14/07/2026", "count": 439.0, "oad": 5.529901, "mtd_px_rtn": -0.634386, "mtd_cpn_rtn": 0.249556, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": -0.00014700000000000824, "mtd_tot_rtn": -0.384977, "1d_tot_rtn": 0.046597, "ytd_tot_rtn": 2.489482, "3m_tot_rtn": 1.094099, "6m_tot_rtn": 2.487243, "12m_tot_rtn": 8.804106}, {"row": 13, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": "Quality", "series": "B", "display_name": "B", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > B", "depth": 5, "ticker": "I05039US", "bbg_index": "I05039US  Index", "last_update": "14/07/2026", "count": 228.0, "oad": 4.488773, "mtd_px_rtn": -0.344428, "mtd_cpn_rtn": 0.26743, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.07518500000000002, "mtd_tot_rtn": -0.001813, "1d_tot_rtn": -0.004236, "ytd_tot_rtn": 3.691436, "3m_tot_rtn": 1.683379, "6m_tot_rtn": 3.672936, "12m_tot_rtn": 13.919201}, {"row": 14, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": "Quality", "series": "Caa", "display_name": "Caa", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Caa", "depth": 5, "ticker": "I12882US", "bbg_index": "I12882US  Index", "last_update": "14/07/2026", "count": 54.0, "oad": 4.697353, "mtd_px_rtn": 0.673346, "mtd_cpn_rtn": 0.270956, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.944302, "1d_tot_rtn": 0.041078, "ytd_tot_rtn": 11.048939, "3m_tot_rtn": 5.835488, "6m_tot_rtn": 10.629121, "12m_tot_rtn": 25.64925}, {"row": 15, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": "Quality", "series": "Ca-D", "display_name": "Ca-D", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > Ca-D", "depth": 5, "ticker": "I12883US", "bbg_index": "I12883US  Index", "last_update": "14/07/2026", "count": 20.0, "oad": 3.402181, "mtd_px_rtn": -3.747164, "mtd_cpn_rtn": 0.036392, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -3.710772, "1d_tot_rtn": -0.28557, "ytd_tot_rtn": 22.71112, "3m_tot_rtn": 0.804323, "6m_tot_rtn": 8.709566, "12m_tot_rtn": 33.993261}, {"row": 16, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate High Yield", "sub_category": "Quality", "series": "NR", "display_name": "NR", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate High Yield > Quality > NR", "depth": 5, "ticker": "I12884US", "bbg_index": "I12884US  Index", "last_update": "14/07/2026", "count": 17.0, "oad": 4.450585, "mtd_px_rtn": -0.463174, "mtd_cpn_rtn": 0.210814, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.25236, "1d_tot_rtn": -0.075581, "ytd_tot_rtn": 2.708391, "3m_tot_rtn": 1.049042, "6m_tot_rtn": 2.169451, "12m_tot_rtn": 6.159363}, {"row": 17, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate Investment Grade", "sub_category": null, "series": null, "display_name": "EM USD Aggregate Investment Grade", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade", "depth": 3, "ticker": "I04276US", "bbg_index": "I04276US  Index", "last_update": "14/07/2026", "count": 1391.0, "oad": 6.240592, "mtd_px_rtn": -0.863339, "mtd_cpn_rtn": 0.190344, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.672995, "1d_tot_rtn": 0.024696, "ytd_tot_rtn": 0.054651, "3m_tot_rtn": -0.27417, "6m_tot_rtn": 0.031157, "12m_tot_rtn": 4.860863}, {"row": 19, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate Investment Grade", "sub_category": "Quality", "series": "Aaa", "display_name": "Aaa", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aaa", "depth": 5, "ticker": "I12878US", "bbg_index": "I12878US  Index", "last_update": "14/07/2026", "count": 0.0, "oad": 0.0, "mtd_px_rtn": 0.0, "mtd_cpn_rtn": 0.0, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.0, "1d_tot_rtn": 0.0, "ytd_tot_rtn": 0.0, "3m_tot_rtn": 0.0, "6m_tot_rtn": 0.0, "12m_tot_rtn": 0.0}, {"row": 20, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate Investment Grade", "sub_category": "Quality", "series": "Aa", "display_name": "Aa", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Aa", "depth": 5, "ticker": "I12879US", "bbg_index": "I12879US  Index", "last_update": "14/07/2026", "count": 203.0, "oad": 5.890189, "mtd_px_rtn": -0.873742, "mtd_cpn_rtn": 0.167676, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.706066, "1d_tot_rtn": 0.002903, "ytd_tot_rtn": -0.478491, "3m_tot_rtn": -0.170761, "6m_tot_rtn": -0.494324, "12m_tot_rtn": 3.74007}, {"row": 21, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate Investment Grade", "sub_category": "Quality", "series": "A", "display_name": "A", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > A", "depth": 5, "ticker": "I12880US", "bbg_index": "I12880US  Index", "last_update": "14/07/2026", "count": 457.0, "oad": 6.092305, "mtd_px_rtn": -0.898869, "mtd_cpn_rtn": 0.182448, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.716421, "1d_tot_rtn": 0.010919, "ytd_tot_rtn": 0.11704, "3m_tot_rtn": -0.176302, "6m_tot_rtn": 0.030211, "12m_tot_rtn": 4.533316}, {"row": 22, "main_universe": "EM USD Aggregate", "category_group": "Broad Quality", "sub_universe": "EM USD Aggregate Investment Grade", "sub_category": "Quality", "series": "Baa", "display_name": "Baa", "full_path": "EM USD Aggregate > Broad Quality > EM USD Aggregate Investment Grade > Quality > Baa", "depth": 5, "ticker": "I12881US", "bbg_index": "I12881US  Index", "last_update": "14/07/2026", "count": 731.0, "oad": 6.461162, "mtd_px_rtn": -0.834072, "mtd_cpn_rtn": 0.203386, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.630686, "1d_tot_rtn": 0.041741, "ytd_tot_rtn": 0.18394, "3m_tot_rtn": -0.3796, "6m_tot_rtn": 0.203155, "12m_tot_rtn": 5.484676}, {"row": 24, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "1-3 Year", "sub_category": null, "series": null, "display_name": "1-3 Year", "full_path": "EM USD Aggregate > Maturity > 1-3 Year", "depth": 3, "ticker": "I12885US", "bbg_index": "I12885US  Index", "last_update": "14/07/2026", "count": 484.0, "oad": 1.720945, "mtd_px_rtn": -0.169582, "mtd_cpn_rtn": 0.19686, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0003550000000000046, "mtd_tot_rtn": 0.027633, "1d_tot_rtn": 0.051909, "ytd_tot_rtn": 1.895546, "3m_tot_rtn": 0.80389, "6m_tot_rtn": 1.645997, "12m_tot_rtn": 4.823556}, {"row": 25, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "3-5 Year", "sub_category": null, "series": null, "display_name": "3-5 Year", "full_path": "EM USD Aggregate > Maturity > 3-5 Year", "depth": 3, "ticker": "I12886US", "bbg_index": "I12886US  Index", "last_update": "14/07/2026", "count": 581.0, "oad": 3.259956, "mtd_px_rtn": -0.350013, "mtd_cpn_rtn": 0.195007, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.03492200000000001, "mtd_tot_rtn": -0.120084, "1d_tot_rtn": 0.053769, "ytd_tot_rtn": 1.569595, "3m_tot_rtn": 0.500097, "6m_tot_rtn": 1.341583, "12m_tot_rtn": 6.08475}, {"row": 26, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "5-7 Year", "sub_category": null, "series": null, "display_name": "5-7 Year", "full_path": "EM USD Aggregate > Maturity > 5-7 Year", "depth": 3, "ticker": "I12887US", "bbg_index": "I12887US  Index", "last_update": "14/07/2026", "count": 267.0, "oad": 4.635157, "mtd_px_rtn": -0.480443, "mtd_cpn_rtn": 0.218899, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": -0.0002670000000000172, "mtd_tot_rtn": -0.261811, "1d_tot_rtn": 0.062167, "ytd_tot_rtn": 1.750551, "3m_tot_rtn": 0.606362, "6m_tot_rtn": 1.550327, "12m_tot_rtn": 7.0264}, {"row": 27, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "7-10 Year", "sub_category": null, "series": null, "display_name": "7-10 Year", "full_path": "EM USD Aggregate > Maturity > 7-10 Year", "depth": 3, "ticker": "I12888US", "bbg_index": "I12888US  Index", "last_update": "14/07/2026", "count": 306.0, "oad": 6.279543, "mtd_px_rtn": -0.656598, "mtd_cpn_rtn": 0.221842, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.434756, "1d_tot_rtn": 0.041534, "ytd_tot_rtn": 1.732167, "3m_tot_rtn": 0.769062, "6m_tot_rtn": 1.715495, "12m_tot_rtn": 8.597036}, {"row": 28, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "10-20 Year", "sub_category": null, "series": null, "display_name": "10-20 Year", "full_path": "EM USD Aggregate > Maturity > 10-20 Year", "depth": 3, "ticker": "I12889US", "bbg_index": "I12889US  Index", "last_update": "14/07/2026", "count": 216.0, "oad": 8.75115, "mtd_px_rtn": -1.074448, "mtd_cpn_rtn": 0.231104, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.843344, "1d_tot_rtn": -0.00486, "ytd_tot_rtn": 1.914015, "3m_tot_rtn": 0.631923, "6m_tot_rtn": 1.962873, "12m_tot_rtn": 10.922008}, {"row": 29, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "20+ Year", "sub_category": null, "series": null, "display_name": "20+ Year", "full_path": "EM USD Aggregate > Maturity > 20+ Year", "depth": 3, "ticker": "I12890US", "bbg_index": "I12890US  Index", "last_update": "14/07/2026", "count": 295.0, "oad": 12.76684, "mtd_px_rtn": -1.924222, "mtd_cpn_rtn": 0.23252, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.002955000000000041, "mtd_tot_rtn": -1.688747, "1d_tot_rtn": -0.073887, "ytd_tot_rtn": 0.311623, "3m_tot_rtn": -0.264003, "6m_tot_rtn": 0.652825, "12m_tot_rtn": 9.811795}, {"row": 30, "main_universe": "EM USD Aggregate", "category_group": "Maturity", "sub_universe": "1-5 Year", "sub_category": null, "series": null, "display_name": "1-5 Year", "full_path": "EM USD Aggregate > Maturity > 1-5 Year", "depth": 3, "ticker": "BEM5TRUU", "bbg_index": "BEM5TRUU  Index", "last_update": "14/07/2026", "count": 1065.0, "oad": 2.565125, "mtd_px_rtn": -0.268618, "mtd_cpn_rtn": 0.195843, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.019328000000000033, "mtd_tot_rtn": -0.053447, "1d_tot_rtn": 0.052929, "ytd_tot_rtn": 1.712501, "3m_tot_rtn": 0.635026, "6m_tot_rtn": 1.475128, "12m_tot_rtn": 5.507092}, {"row": 31, "main_universe": "EM Pan-European Aggregate", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Pan-European Aggregate", "full_path": "EM Pan-European Aggregate", "depth": 1, "ticker": "I04321EU", "bbg_index": "I04321EU  Index", "last_update": "14/07/2026", "count": 359.0, "oad": 5.247434, "mtd_px_rtn": -0.836351, "mtd_cpn_rtn": 0.140452, "mtd_curr_rtn": 0.00764, "mtd_oth_rtn": 0.0036720000000000086, "mtd_tot_rtn": -0.684587, "1d_tot_rtn": -0.144903, "ytd_tot_rtn": 1.467202, "3m_tot_rtn": 0.948396, "6m_tot_rtn": 1.17014, "12m_tot_rtn": 4.007959}, {"row": 33, "main_universe": "EM Pan-European Aggregate", "category_group": "Region", "sub_universe": "EM Pan-European Aggregate Asia", "sub_category": null, "series": null, "display_name": "EM Pan-European Aggregate Asia", "full_path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate Asia", "depth": 3, "ticker": "I04337EU", "bbg_index": "I04337EU  Index", "last_update": "14/07/2026", "count": 60.0, "oad": 4.804396, "mtd_px_rtn": -0.506127, "mtd_cpn_rtn": 0.094881, "mtd_curr_rtn": 0.009929, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.401317, "1d_tot_rtn": -0.070424, "ytd_tot_rtn": 0.213518, "3m_tot_rtn": 0.352006, "6m_tot_rtn": 0.054985, "12m_tot_rtn": 1.44561}, {"row": 34, "main_universe": "EM Pan-European Aggregate", "category_group": "Region", "sub_universe": "EM Pan-European Aggregate LATAM", "sub_category": null, "series": null, "display_name": "EM Pan-European Aggregate LATAM", "full_path": "EM Pan-European Aggregate > Region > EM Pan-European Aggregate LATAM", "depth": 3, "ticker": "I04338EU", "bbg_index": "I04338EU  Index", "last_update": "14/07/2026", "count": 62.0, "oad": 5.944968, "mtd_px_rtn": -0.912218, "mtd_cpn_rtn": 0.143107, "mtd_curr_rtn": 0.031359, "mtd_oth_rtn": 0.018715999999999955, "mtd_tot_rtn": -0.719036, "1d_tot_rtn": -0.204332, "ytd_tot_rtn": 1.951392, "3m_tot_rtn": 1.403213, "6m_tot_rtn": 1.577979, "12m_tot_rtn": 4.567359}, {"row": 35, "main_universe": "EM Local Currency Govt Universal", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Local Currency Govt Universal", "full_path": "EM Local Currency Govt Universal", "depth": 1, "ticker": "I20258US", "bbg_index": "I20258US  Index", "last_update": "14/07/2026", "count": 1022.0, "oad": 6.707563, "mtd_px_rtn": -0.244534, "mtd_cpn_rtn": 0.15724, "mtd_curr_rtn": 0.114917, "mtd_oth_rtn": 1.0000000000044695e-06, "mtd_tot_rtn": 0.027624, "1d_tot_rtn": -0.046425, "ytd_tot_rtn": 1.325326, "3m_tot_rtn": -0.148209, "6m_tot_rtn": 1.329262, "12m_tot_rtn": 2.999896}, {"row": 37, "main_universe": "EM Local Currency Govt Universal", "category_group": "Region", "sub_universe": "EM Americas", "sub_category": null, "series": null, "display_name": "EM Americas", "full_path": "EM Local Currency Govt Universal > Region > EM Americas", "depth": 3, "ticker": "I20259US", "bbg_index": "I20259US  Index", "last_update": "14/07/2026", "count": 85.0, "oad": 4.311878, "mtd_px_rtn": 0.140475, "mtd_cpn_rtn": 0.259362, "mtd_curr_rtn": 1.816128, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 2.215965, "1d_tot_rtn": 0.609271, "ytd_tot_rtn": 12.113168, "3m_tot_rtn": 2.771508, "6m_tot_rtn": 9.277904, "12m_tot_rtn": 22.65612}, {"row": 38, "main_universe": "EM Local Currency Govt Universal", "category_group": "Region", "sub_universe": "EM EMEA", "sub_category": null, "series": null, "display_name": "EM EMEA", "full_path": "EM Local Currency Govt Universal > Region > EM EMEA", "depth": 3, "ticker": "I20266US", "bbg_index": "I20266US  Index", "last_update": "14/07/2026", "count": 225.0, "oad": 4.85185, "mtd_px_rtn": -0.597989, "mtd_cpn_rtn": 0.285153, "mtd_curr_rtn": -0.390142, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.702978, "1d_tot_rtn": 0.112364, "ytd_tot_rtn": 2.326475, "3m_tot_rtn": -0.074809, "6m_tot_rtn": 1.805034, "12m_tot_rtn": 13.497442}, {"row": 39, "main_universe": "EM Local Currency Govt Universal", "category_group": "Region", "sub_universe": "EM Asia", "sub_category": null, "series": null, "display_name": "EM Asia", "full_path": "EM Local Currency Govt Universal > Region > EM Asia", "depth": 3, "ticker": "I20277US", "bbg_index": "I20277US  Index", "last_update": "14/07/2026", "count": 712.0, "oad": 7.210364, "mtd_px_rtn": -0.238625, "mtd_cpn_rtn": 0.129555, "mtd_curr_rtn": 0.001572, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.107498, "1d_tot_rtn": -0.137665, "ytd_tot_rtn": 0.123874, "3m_tot_rtn": -0.456253, "6m_tot_rtn": 0.461586, "12m_tot_rtn": 0.038968}, {"row": 40, "main_universe": "EM Local Currency Govt", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Local Currency Govt", "full_path": "EM Local Currency Govt", "depth": 1, "ticker": "I20344US", "bbg_index": "I20344US  Index", "last_update": "14/07/2026", "count": 713.0, "oad": 6.635399, "mtd_px_rtn": -0.238428, "mtd_cpn_rtn": 0.144197, "mtd_curr_rtn": 0.296915, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.202684, "1d_tot_rtn": 0.02629, "ytd_tot_rtn": 1.873455, "3m_tot_rtn": -0.147129, "6m_tot_rtn": 1.812016, "12m_tot_rtn": 4.250589}, {"row": 42, "main_universe": "EM Local Currency Govt", "category_group": "Region", "sub_universe": "EM EMEA", "sub_category": null, "series": null, "display_name": "EM EMEA", "full_path": "EM Local Currency Govt > Region > EM EMEA", "depth": 3, "ticker": "I30744US", "bbg_index": "I30744US  Index", "last_update": "14/07/2026", "count": 139.0, "oad": 5.069834, "mtd_px_rtn": -0.662602, "mtd_cpn_rtn": 0.247318, "mtd_curr_rtn": -0.244138, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.659422, "1d_tot_rtn": 0.181697, "ytd_tot_rtn": 2.141155, "3m_tot_rtn": -0.432946, "6m_tot_rtn": 1.671449, "12m_tot_rtn": 12.986226}, {"row": 43, "main_universe": "EM Local Currency Govt", "category_group": "Region", "sub_universe": "EM Asia", "sub_category": null, "series": null, "display_name": "EM Asia", "full_path": "EM Local Currency Govt > Region > EM Asia", "depth": 3, "ticker": "I22831US", "bbg_index": "I22831US  Index", "last_update": "14/07/2026", "count": 490.0, "oad": 7.132342, "mtd_px_rtn": -0.225237, "mtd_cpn_rtn": 0.116389, "mtd_curr_rtn": 0.189733, "mtd_oth_rtn": 9.999999999732445e-07, "mtd_tot_rtn": 0.080886, "1d_tot_rtn": -0.065475, "ytd_tot_rtn": 0.700244, "3m_tot_rtn": -0.44707, "6m_tot_rtn": 0.996491, "12m_tot_rtn": 1.185497}, {"row": 45, "main_universe": "EM Local Currency Govt", "category_group": "Broad Quality", "sub_universe": "Investment Grade", "sub_category": null, "series": null, "display_name": "Investment Grade", "full_path": "EM Local Currency Govt > Broad Quality > Investment Grade", "depth": 3, "ticker": "I22832US", "bbg_index": "I22832US  Index", "last_update": "14/07/2026", "count": 642.0, "oad": 6.843863, "mtd_px_rtn": -0.239422, "mtd_cpn_rtn": 0.127905, "mtd_curr_rtn": 0.148384, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.036867, "1d_tot_rtn": -0.004775, "ytd_tot_rtn": 1.06292, "3m_tot_rtn": -0.468929, "6m_tot_rtn": 1.18637, "12m_tot_rtn": 2.584896}, {"row": 46, "main_universe": "EM Local Currency Govt", "category_group": "Broad Quality", "sub_universe": "High Yield", "sub_category": null, "series": null, "display_name": "High Yield", "full_path": "EM Local Currency Govt > Broad Quality > High Yield", "depth": 3, "ticker": "I22836US", "bbg_index": "I22836US  Index", "last_update": "14/07/2026", "count": 71.0, "oad": 4.169755, "mtd_px_rtn": -0.22641, "mtd_cpn_rtn": 0.341065, "mtd_curr_rtn": 2.091795, "mtd_oth_rtn": -9.999999996956888e-07, "mtd_tot_rtn": 2.206449, "1d_tot_rtn": 0.395181, "ytd_tot_rtn": 12.33927, "3m_tot_rtn": 3.87501, "6m_tot_rtn": 9.754041, "12m_tot_rtn": 28.16892}, {"row": 48, "main_universe": "EM Local Currency Govt", "category_group": "Broad Maturity", "sub_universe": "Intermediate", "sub_category": null, "series": null, "display_name": "Intermediate", "full_path": "EM Local Currency Govt > Broad Maturity > Intermediate", "depth": 3, "ticker": "I22842US", "bbg_index": "I22842US  Index", "last_update": "14/07/2026", "count": 469.0, "oad": 4.127321, "mtd_px_rtn": -0.138764, "mtd_cpn_rtn": 0.135529, "mtd_curr_rtn": 0.2462, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.242965, "1d_tot_rtn": 0.076789, "ytd_tot_rtn": 2.888891, "3m_tot_rtn": 0.265199, "6m_tot_rtn": 2.653138, "12m_tot_rtn": 6.435513}, {"row": 50, "main_universe": "EM Local Currency Govt", "category_group": "Broad Maturity", "sub_universe": "Intermediate", "sub_category": "Maturity", "series": "1-3 Year", "display_name": "1-3 Year", "full_path": "EM Local Currency Govt > Broad Maturity > Intermediate > Maturity > 1-3 Year", "depth": 5, "ticker": "I22843US", "bbg_index": "I22843US  Index", "last_update": "14/07/2026", "count": 154.0, "oad": 1.872847, "mtd_px_rtn": -0.011557, "mtd_cpn_rtn": 0.117733, "mtd_curr_rtn": 0.320645, "mtd_oth_rtn": 9.999999999732445e-07, "mtd_tot_rtn": 0.426822, "1d_tot_rtn": 0.15879, "ytd_tot_rtn": 3.397829, "3m_tot_rtn": 0.340538, "6m_tot_rtn": 3.200461, "12m_tot_rtn": 7.177478}, {"row": 51, "main_universe": "EM Local Currency Govt", "category_group": "Broad Maturity", "sub_universe": "Intermediate", "sub_category": "Maturity", "series": "5-7 Year", "display_name": "5-7 Year", "full_path": "EM Local Currency Govt > Broad Maturity > Intermediate > Maturity > 5-7 Year", "depth": 5, "ticker": "I22845US", "bbg_index": "I22845US  Index", "last_update": "14/07/2026", "count": 89.0, "oad": 5.349559, "mtd_px_rtn": -0.180075, "mtd_cpn_rtn": 0.13959, "mtd_curr_rtn": 0.193243, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.152758, "1d_tot_rtn": 0.02269, "ytd_tot_rtn": 3.473847, "3m_tot_rtn": 0.52274, "6m_tot_rtn": 3.16744, "12m_tot_rtn": 6.822647}, {"row": 52, "main_universe": "EM Local Currency Govt", "category_group": "Broad Maturity", "sub_universe": "Long", "sub_category": null, "series": null, "display_name": "Long", "full_path": "EM Local Currency Govt > Broad Maturity > Long", "depth": 3, "ticker": "I22847US", "bbg_index": "I22847US  Index", "last_update": "14/07/2026", "count": 244.0, "oad": 14.76554, "mtd_px_rtn": -0.560945, "mtd_cpn_rtn": 0.172245, "mtd_curr_rtn": 0.461034, "mtd_oth_rtn": -9.999999999593667e-07, "mtd_tot_rtn": 0.072333, "1d_tot_rtn": -0.137059, "ytd_tot_rtn": -1.246026, "3m_tot_rtn": -1.456008, "6m_tot_rtn": -0.799018, "12m_tot_rtn": -2.081645}, {"row": 54, "main_universe": "EM Local Currency Govt", "category_group": "Broad Maturity", "sub_universe": "Long", "sub_category": "Maturity", "series": "10-20 Year", "display_name": "10-20 Year", "full_path": "EM Local Currency Govt > Broad Maturity > Long > Maturity > 10-20 Year", "depth": 5, "ticker": "I22848US", "bbg_index": "I22848US  Index", "last_update": "14/07/2026", "count": 129.0, "oad": 9.9681, "mtd_px_rtn": -0.530289, "mtd_cpn_rtn": 0.208706, "mtd_curr_rtn": 0.274582, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.047001, "1d_tot_rtn": -0.16393, "ytd_tot_rtn": -1.028053, "3m_tot_rtn": -1.464026, "6m_tot_rtn": -1.02455, "12m_tot_rtn": 3.391795}, {"row": 55, "main_universe": "EM USD Sov + Sov Owned", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM USD Sov + Sov Owned", "full_path": "EM USD Sov + Sov Owned", "depth": 1, "ticker": "I38156US", "bbg_index": "I38156US  Index", "last_update": "14/07/2026", "count": 693.0, "oad": 6.680508, "mtd_px_rtn": -0.859157, "mtd_cpn_rtn": 0.214313, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.02137599999999995, "mtd_tot_rtn": -0.623468, "1d_tot_rtn": 0.016786, "ytd_tot_rtn": 1.795897, "3m_tot_rtn": 0.552343, "6m_tot_rtn": 1.949232, "12m_tot_rtn": 9.782989}, {"row": 56, "main_universe": "EM Asia USD Credit", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Asia USD Credit", "full_path": "EM Asia USD Credit", "depth": 1, "ticker": "BEUCTRUU", "bbg_index": "BEUCTRUU  Index", "last_update": "14/07/2026", "count": 1208.0, "oad": 4.815105, "mtd_px_rtn": -0.611814, "mtd_cpn_rtn": 0.18436, "mtd_curr_rtn": 0.0, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.427454, "1d_tot_rtn": 0.036301, "ytd_tot_rtn": 0.663185, "3m_tot_rtn": -0.085292, "6m_tot_rtn": 0.431455, "12m_tot_rtn": 4.919022}, {"row": 57, "main_universe": "EM GCC Credit Benchmark", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM GCC Credit Benchmark", "full_path": "EM GCC Credit Benchmark", "depth": 1, "ticker": "I23117US", "bbg_index": "I23117US  Index", "last_update": "14/07/2026", "count": 477.0, "oad": 5.982482, "mtd_px_rtn": -0.97124, "mtd_cpn_rtn": 0.193324, "mtd_curr_rtn": 0.004827, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": -0.773089, "1d_tot_rtn": -0.067884, "ytd_tot_rtn": -0.362541, "3m_tot_rtn": 0.003343, "6m_tot_rtn": -0.301778, "12m_tot_rtn": 4.021696}, {"row": 58, "main_universe": "EM Local Government + China", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Local Government + China", "full_path": "EM Local Government + China", "depth": 1, "ticker": "I32750US", "bbg_index": "I32750US  Index", "last_update": "14/07/2026", "count": 713.0, "oad": 6.635399, "mtd_px_rtn": -0.238428, "mtd_cpn_rtn": 0.144197, "mtd_curr_rtn": 0.296915, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.202684, "1d_tot_rtn": 0.02629, "ytd_tot_rtn": 1.873455, "3m_tot_rtn": -0.147129, "6m_tot_rtn": 1.812016, "12m_tot_rtn": 4.250589}, {"row": 59, "main_universe": "EM Local Government + India FAR", "category_group": null, "sub_universe": null, "sub_category": null, "series": null, "display_name": "EM Local Government + India FAR", "full_path": "EM Local Government + India FAR", "depth": 1, "ticker": "I36368US", "bbg_index": "I36368US  Index", "last_update": "14/07/2026", "count": 713.0, "oad": 6.635399, "mtd_px_rtn": -0.238428, "mtd_cpn_rtn": 0.144197, "mtd_curr_rtn": 0.296915, "mtd_oth_rtn": 0.0, "mtd_tot_rtn": 0.202684, "1d_tot_rtn": 0.02629, "ytd_tot_rtn": 1.873455, "3m_tot_rtn": -0.147129, "6m_tot_rtn": 1.812016, "12m_tot_rtn": 4.165536}];
+const CATEGORY_TOKENS = new Set(['Region','Broad Quality','Broad Maturity','Quality','Maturity','Investment Grade','High Yield','Intermediate','Long']);
+const metricLabels = {'1d_tot_rtn':'1D','mtd_tot_rtn':'MTD','ytd_tot_rtn':'YTD','3m_tot_rtn':'3M','6m_tot_rtn':'6M','12m_tot_rtn':'12M'};
+const palette = ['#0f4d94','#10b981','#7c3aed','#f59e0b','#64748b','#0284c7','#dc2626','#14b8a6','#a855f7','#3b82f6'];
+let selected = {main:new Set(), cat:new Set(), sub:new Set(), subcat:new Set(), series:new Set()};
 
-function chartFontName() {
-  const el = document.getElementById('chartFont');
-  return el ? el.value : 'Arial';
+function clean(v) { if(v===null||v===undefined) return null; const s=String(v).trim(); return s===''?null:s; }
+function num(v) { if(v===null||v===undefined||v==='') return null; const n=Number(v); return Number.isFinite(n)?n:null; }
+function unique(arr) { return [...new Set(arr.filter(v=>v!==null && v!==undefined && String(v).trim()!==''))].sort(); }
+function itemKey(x) { return String(x.ticker||'')+'|'+String(x.full_path||''); }
+function catKey(xOrMain, cat=null) {
+  if(typeof xOrMain==='object') return String(xOrMain.main_universe)+'||'+String(xOrMain.category_group);
+  return String(xOrMain)+'||'+String(cat);
 }
-function chartBaseSize() {
-  const el = document.getElementById('baseFontSize');
-  return el ? Number(el.value) : 16;
+function subKey(xOrMain, cat=null, sub=null) {
+  if(typeof xOrMain==='object') return String(xOrMain.main_universe)+'||'+String(xOrMain.category_group)+'||'+String(xOrMain.sub_universe);
+  return String(xOrMain)+'||'+String(cat)+'||'+String(sub);
 }
-function pptTitleSize() {
-  const el = document.getElementById('pptTitleSize');
-  return el ? Number(el.value) : 26;
+function subcatKey(xOrMain, cat=null, sub=null, subcat=null) {
+  if(typeof xOrMain==='object') return String(xOrMain.main_universe)+'||'+String(xOrMain.category_group)+'||'+String(xOrMain.sub_universe)+'||'+String(xOrMain.sub_category);
+  return String(xOrMain)+'||'+String(cat)+'||'+String(sub)+'||'+String(subcat);
 }
-
-function heatCellFontSize() {
-  const el = document.getElementById('heatCellFontSize');
-  return el ? Number(el.value) : 20;
+function splitKey(k) { return String(k).split('||'); }
+function chartFontName() { return document.getElementById('chartFont')?.value || 'Arial'; }
+function chartBaseSize() { return Number(document.getElementById('baseFontSize')?.value || 16); }
+function compValues() { return document.getElementById('compositionValueMode')?.value || 'show'; }
+function scatterMode() { return document.getElementById('scatterLabelMode')?.value || 'hover'; }
+function orderMode() { return document.getElementById('orderMode')?.value || 'hierarchy'; }
+function hierarchySort(a,b) {
+  const ak = [
+    a.main_universe || '',
+    a.category_group || '',
+    a.sub_universe || '',
+    a.sub_category || '',
+    a.series || a.display_name || '',
+    String(a.row || '')
+  ].join('||');
+  const bk = [
+    b.main_universe || '',
+    b.category_group || '',
+    b.sub_universe || '',
+    b.sub_category || '',
+    b.series || b.display_name || '',
+    String(b.row || '')
+  ].join('||');
+  return ak.localeCompare(bk, undefined, {numeric:true, sensitivity:'base'});
 }
-function heatAxisFontSize() {
-  const el = document.getElementById('heatAxisFontSize');
-  return el ? Number(el.value) : 20;
-}
-
-function scatterLabelMode() {
-  const el = document.getElementById('scatterLabelMode');
-  return el ? el.value : 'hover';
-}
-function scatterFontSize() {
-  const el = document.getElementById('scatterFontSize');
-  return el ? Number(el.value) : 16;
-}
-
-function compositionValueMode() {
-  const el = document.getElementById('compositionValueMode');
-  return el ? el.value : 'show';
-}
-function valueText(v) {
-  if (v === null || v === undefined || Number.isNaN(v)) return '';
-  if (Math.abs(Number(v)) < 0.01) return '';
-  return Number(v).toFixed(1);
-}
-function shortAssetName(name) {
-  const map = {
-    'EM Hard Currency Aggregate':'HC Aggregate',
-    'EM USD Aggregate':'USD Aggregate',
-    'EM Pan-European Aggregate':'Pan-Euro Agg',
-    'EM Local Currency Govt Universal':'LC Govt Univ.',
-    'EM Local Currency Govt':'LC Govt',
-    'EM USD Sov + Sov Owned':'USD Sov.',
-    'EM Asia USD Credit':'Asia USD',
-    'EM GCC Credit Benchmark':'GCC Credit',
-    'EM Local Government + China':'LC + China',
-    'EM Local Government + India FAR':'LC + India'
-  };
-  return map[name] || String(name || '').replace('EM ','').replace('Aggregate','Agg.');
-}
-const metricLabels = {
-  '1d_tot_rtn':'1D', 'mtd_tot_rtn':'MTD', 'ytd_tot_rtn':'YTD',
-  '3m_tot_rtn':'3M', '6m_tot_rtn':'6M', '12m_tot_rtn':'12M'
-};
-const colors = {
-  'Top Level':'#0f4d94', 'Region':'#10b981', 'Quality':'#7c3aed',
-  'Maturity':'#f59e0b', 'Other':'#64748b'
-};
-const layoutBase = {
-  paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff',
-  margin:{l:70,r:25,t:35,b:100},
-  font:{family:'Arial',color:'#1d2d44'},
-  xaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9'},
-  yaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9'},
-  showlegend:true
-};
-const config = {displaylogo:false, responsive:true};
-
-
-function firstNonEmpty(arr) {
-  for (const v of arr) {
-    if (v !== null && v !== undefined && String(v).trim() !== '') return String(v).trim();
+function orderedData(d, metric=null) {
+  const arr = d.slice();
+  if(orderMode()==='performance' && metric) {
+    return arr
+      .filter(x=>x[metric]!==null && x[metric]!==undefined)
+      .sort((a,b)=>b[metric]-a[metric]);
   }
-  return null;
+  return arr.sort(hierarchySort);
 }
-function toNum(v) {
-  if (v === null || v === undefined || v === '') return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+function fmt(v,d=1) { return (v===null || v===undefined || Number.isNaN(Number(v))) ? '–' : Number(v).toFixed(d)+'%'; }
+function valueText(v) { if(v===null || v===undefined || Number.isNaN(Number(v)) || Math.abs(Number(v))<0.01) return ''; return Number(v).toFixed(1); }
+function median(a) { const b=a.filter(v=>v!==null && v!==undefined && !Number.isNaN(Number(v))).map(Number).sort((x,y)=>x-y); if(!b.length) return null; const m=Math.floor(b.length/2); return b.length%2?b[m]:(b[m-1]+b[m])/2; }
+function wrapLabel(text,maxLen=18) { const words=String(text||'').split(' '); let line='', lines=[]; words.forEach(w=>{ const c=line?line+' '+w:w; if(c.length>maxLen&&line){lines.push(line); line=w;} else line=c; }); if(line) lines.push(line); return lines.join('<br>'); }
+function shortName(n) { return String(n||'').replace('EM USD Aggregate','USD Agg').replace('EM Local Currency Govt','LC Govt').replace('EM Hard Currency Aggregate','HC Agg').replace('Investment Grade','IG').replace('High Yield','HY').replace('Aggregate','Agg.'); }
+function layoutBase(extra={}) {
+  const fs=chartBaseSize();
+  return Object.assign({
+    paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff',
+    font:{family:chartFontName(),size:fs,color:'#1d2d44'},
+    margin:{l:70,r:40,t:45,b:90},
+    xaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9',tickfont:{size:fs-1},titlefont:{size:fs+1}},
+    yaxis:{gridcolor:'#e7edf5',zerolinecolor:'#aebbc9',tickfont:{size:fs-1},titlefont:{size:fs+1}},
+    legend:{font:{size:Math.max(11,fs-2)}}
+  }, extra);
 }
-function inferGroupFromPath(path, name, isTop) {
-  const p = String(path || '');
-  if (p.includes('Maturity')) return 'Maturity';
-  if (p.includes('Quality') || ['Investment Grade','High Yield','Aaa','Aa','A','Baa','Ba','B','Caa','Ca-D','NR'].includes(name)) return 'Quality';
-  if (p.includes('Region')) return 'Region';
-  if (isTop) return 'Top Level';
-  return 'Other';
-}
-function normalizeHeader(v) {
-  return String(v ?? '').trim().toLowerCase().replace(/[\s_\-]+/g,'');
-}
-function excelDateToIso(v) {
-  if (v === null || v === undefined || v === '') return null;
-  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
-  if (typeof v === 'number' && Number.isFinite(v)) {
-    const p = XLSX.SSF.parse_date_code(v);
-    if (p) return `${p.y}-${String(p.m).padStart(2,'0')}-${String(p.d).padStart(2,'0')}`;
-  }
-  const text = String(v).trim();
-  const d = new Date(text);
-  if (!isNaN(d)) return d.toISOString().slice(0,10);
-  return text;
-}
-function formatDisplayDate(v) {
-  if (!v) return 'N/A';
-  const d = new Date(String(v).slice(0,10) + 'T00:00:00');
-  if (isNaN(d)) return String(v);
-  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-}
-function getDataAsOf() {
-  const dates = DATA.map(x=>excelDateToIso(x.last_update)).filter(Boolean).sort();
-  return dates.length ? dates[dates.length-1] : null;
-}
-function updateDataDateDisplay() {
-  const label = 'Data as of ' + formatDisplayDate(getDataAsOf());
-  const el = document.getElementById('headerDataDate');
-  if (el) el.textContent = label;
-  return label;
-}
-function parseReturnSheet(rows) {
-  const context = [null,null,null,null,null];
-  const out = [];
-  const headerRowIndex = rows.findIndex(row => (row || []).some(v => normalizeHeader(v) === 'lastupdate'));
-  const headerRow = headerRowIndex >= 0 ? rows[headerRowIndex] : [];
-  const headerMap = {};
-  headerRow.forEach((v,i)=>{ const key=normalizeHeader(v); if(key) headerMap[key]=i; });
-  const lastUpdateCol = headerMap.lastupdate ?? 7;
-  const dataStartRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 2;
-  for (let r = dataStartRow; r < rows.length; r++) {
-    const row = rows[r] || [];
-    const levels = row.slice(0,5);
-    for (let i=0;i<5;i++) {
-      const v = levels[i];
-      if (v !== null && v !== undefined && String(v).trim() !== '') {
-        context[i] = String(v).trim();
-        for (let j=i+1;j<5;j++) context[j]=null;
+const config={displaylogo:false,responsive:true};
+
+function parseRows(rows) {
+  let currentMain=null, out=[];
+  for(let r=2;r<rows.length;r++) {
+    const row=rows[r]||[];
+    const raw=[0,1,2,3,4].map(i=>clean(row[i]));
+    const non=raw.filter(x=>x);
+    if(!non.length) continue;
+    const ticker=clean(row[5]);
+    let levels=[];
+    if(ticker && raw[0] && !raw.slice(1).some(x=>x) && !CATEGORY_TOKENS.has(raw[0])) {
+      currentMain=raw[0]; levels=[raw[0]];
+    } else {
+      if(raw[0] && CATEGORY_TOKENS.has(raw[0]) && currentMain) levels=[currentMain,...non];
+      else {
+        levels=non;
+        if(raw[0] && !CATEGORY_TOKENS.has(raw[0])) currentMain=raw[0];
       }
     }
-    const ticker = row[5];
-    if (ticker === null || ticker === undefined || String(ticker).trim()==='') continue;
-    const active = context.filter(x=>x!==null && x!=='');
-    const display = active.length ? active[active.length-1] : String(ticker);
-    const path = active.join(' > ');
-    const isTop = active.length===1;
-    const rec = {
-      display_name: display,
-      root_label: active[0] || null,
-      parent_label: active.length>1 ? active[active.length-2] : null,
-      path: path,
-      level_1: context[0], level_2: context[1], level_3: context[2], level_4: context[3], level_5: context[4],
-      hierarchy_depth: active.length,
-      ticker: String(ticker).trim(),
-      bbg_index: row[6] || null,
-      last_update: excelDateToIso(row[lastUpdateCol]),
-      count: toNum(row[8]),
-      oad: toNum(row[9]),
-      mtd_px_rtn: toNum(row[10]),
-      mtd_cpn_rtn: toNum(row[11]),
-      mtd_curr_rtn: toNum(row[12]),
-      mtd_oth_rtn: toNum(row[13]),
-      mtd_tot_rtn: toNum(row[14]),
-      '1d_tot_rtn': toNum(row[16]),
-      ytd_tot_rtn: toNum(row[18]),
-      '3m_tot_rtn': toNum(row[19]),
-      '6m_tot_rtn': toNum(row[20]),
-      '12m_tot_rtn': toNum(row[21]),
-      is_top_level: isTop
-    };
-    rec.group = inferGroupFromPath(path, display, isTop);
-    out.push(rec);
+    if(!ticker) continue;
+    const lv=[...levels,null,null,null,null,null];
+    out.push({
+      row:r+1, main_universe:lv[0], category_group:lv[1], sub_universe:lv[2], sub_category:lv[3], series:lv[4],
+      display_name:levels[levels.length-1], full_path:levels.join(' > '), depth:levels.length,
+      ticker:ticker, bbg_index:clean(row[6]), last_update:clean(row[7]),
+      count:num(row[8]), oad:num(row[9]), mtd_px_rtn:num(row[10]), mtd_cpn_rtn:num(row[11]), mtd_curr_rtn:num(row[12]), mtd_oth_rtn:num(row[13]), mtd_tot_rtn:num(row[14]),
+      '1d_tot_rtn':num(row[16]), ytd_tot_rtn:num(row[18]), '3m_tot_rtn':num(row[19]), '6m_tot_rtn':num(row[20]), '12m_tot_rtn':num(row[21])
+    });
   }
   return out;
 }
-function parseCsvRows(rows) {
-  // CSV should use the parsed-dashboard column names.
-  const headers = rows[0].map(x=>String(x||'').trim());
-  return rows.slice(1).filter(r=>r.some(v=>v!==null && v!==undefined && String(v).trim()!=='')).map(r=>{
-    const obj = {};
-    headers.forEach((h,i)=>obj[h]=r[i]===undefined?null:r[i]);
-    ['count','oad','mtd_px_rtn','mtd_cpn_rtn','mtd_curr_rtn','mtd_oth_rtn','mtd_tot_rtn',
-     '1d_tot_rtn','ytd_tot_rtn','3m_tot_rtn','6m_tot_rtn','12m_tot_rtn','hierarchy_depth']
-      .forEach(c=>obj[c]=toNum(obj[c]));
-    const lastUpdateKey = headers.find(h=>normalizeHeader(h)==='lastupdate');
-    if (lastUpdateKey && obj.last_update == null) obj.last_update = obj[lastUpdateKey];
-    obj.last_update = excelDateToIso(obj.last_update);
-    obj.is_top_level = String(obj.is_top_level).toLowerCase()==='true' || obj.is_top_level===1;
-    obj.group = obj.group || inferGroupFromPath(obj.path,obj.display_name,obj.is_top_level);
-    return obj;
-  });
-}
 async function loadUploadedData() {
-  const input = document.getElementById('dataUpload');
-  const status = document.getElementById('uploadStatus');
-  if (!input.files || !input.files.length) {
-    status.textContent = 'Please choose an Excel or CSV file first.';
-    status.style.color = '#b45309';
-    return;
-  }
-  const file = input.files[0];
+  const input=document.getElementById('dataUpload'), status=document.getElementById('uploadStatus');
+  if(!input.files || !input.files.length) { status.textContent='Please choose an Excel file first.'; status.style.color='#b45309'; return; }
+  const file=input.files[0];
   try {
-    status.textContent = 'Reading ' + file.name + ' ...';
-    status.style.color = '#38506c';
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, {type:'array', cellDates:false});
-    let newData = [];
-    if (file.name.toLowerCase().endsWith('.csv')) {
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-      newData = parseCsvRows(rows);
-    } else {
-      const sheetName = wb.SheetNames.includes('Return') ? 'Return' : wb.SheetNames[0];
-      const ws = wb.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-      newData = parseReturnSheet(rows);
-    }
-    if (!newData.length) throw new Error('No usable rows found.');
-    DATA = newData;
-    refreshGroupOptions();
-    resetFilters();
-    const dataDateLabel = updateDataDateDisplay();
-    status.textContent = 'Updated successfully: ' + file.name + ' | ' + DATA.length + ' series | ' + dataDateLabel;
-    status.style.color = '#047857';
-  } catch (err) {
-    status.textContent = 'Update failed: ' + err.message;
-    status.style.color = '#b91c1c';
+    const buffer=await file.arrayBuffer();
+    const wb=XLSX.read(buffer,{type:'array',cellDates:false});
+    const sheet=wb.SheetNames.includes('Return')?'Return':wb.SheetNames[0];
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:null,raw:true});
+    const parsed=parseRows(rows);
+    if(!parsed.length) throw new Error('No usable rows found.');
+    DATA=parsed; status.textContent='Updated successfully: '+file.name+' | '+DATA.length+' series'; status.style.color='#047857'; presetTopLevel();
+  } catch(e) { status.textContent='Update failed: '+e.message; status.style.color='#b91c1c'; }
+}
+
+function initEmpty() { selected={main:new Set(),cat:new Set(),sub:new Set(),subcat:new Set(),series:new Set()}; }
+function topLevelRows() { return DATA.filter(x=>x.depth===1); }
+function passCascade(x) {
+  if(!selected.main.has(x.main_universe)) return false;
+  if(x.category_group && !selected.cat.has(catKey(x))) return false;
+  if(x.sub_universe && !selected.sub.has(subKey(x))) return false;
+  if(x.sub_category && !selected.subcat.has(subcatKey(x))) return false;
+  return true;
+}
+function filteredSeriesPool() {
+  const q=String(document.getElementById('searchBox')?.value||'').toLowerCase().trim();
+  return DATA.filter(passCascade).filter(x=>!q || [x.display_name,x.ticker,x.full_path].some(v=>String(v||'').toLowerCase().includes(q)));
+}
+function currentData() { return filteredSeriesPool().filter(x=>selected.series.has(itemKey(x))); }
+
+function makeBox(id, options, selectedSet, onChange) {
+  const box=document.getElementById(id); box.innerHTML='';
+  options.forEach(o=>{
+    const label=document.createElement('label'); label.className='option';
+    const checked=selectedSet.has(o.key)?'checked':'';
+    label.innerHTML=`<input type="checkbox" data-key="${o.key}" ${checked}> <span><b>${o.label}</b>${o.parent?`<small>${o.parent}</small>`:''}</span>`;
+    label.querySelector('input').onchange=function(){ if(this.checked) selectedSet.add(o.key); else selectedSet.delete(o.key); onChange(o.key,this.checked); };
+    box.appendChild(label);
+  });
+  if(!options.length) box.innerHTML='<div class="note">No items under selected parent.</div>';
+}
+function buildSelectors() {
+  const mainOptions=unique(DATA.map(x=>x.main_universe)).map(v=>({key:v,label:v,parent:''}));
+  makeBox('mainBox',mainOptions,selected.main,(key,checked)=>syncFromMain(key,checked));
+
+  const catOptions=[];
+  DATA.forEach(x=>{ if(selected.main.has(x.main_universe)&&x.category_group) {
+    const k=catKey(x); if(!catOptions.some(o=>o.key===k)) catOptions.push({key:k,label:x.category_group,parent:x.main_universe});
+  }});
+  selected.cat=new Set([...selected.cat].filter(k=>catOptions.some(o=>o.key===k)));
+  makeBox('catBox',catOptions,selected.cat,(key,checked)=>syncFromCat(key,checked));
+
+  const subOptions=[];
+  DATA.forEach(x=>{ if(x.sub_universe && selected.main.has(x.main_universe) && selected.cat.has(catKey(x))) {
+    const k=subKey(x); if(!subOptions.some(o=>o.key===k)) subOptions.push({key:k,label:x.sub_universe,parent:x.main_universe+' / '+x.category_group});
+  }});
+  selected.sub=new Set([...selected.sub].filter(k=>subOptions.some(o=>o.key===k)));
+  makeBox('subBox',subOptions,selected.sub,(key,checked)=>syncFromSub(key,checked));
+
+  const subcatOptions=[];
+  DATA.forEach(x=>{ if(x.sub_category && selected.main.has(x.main_universe) && selected.cat.has(catKey(x)) && selected.sub.has(subKey(x))) {
+    const k=subcatKey(x); if(!subcatOptions.some(o=>o.key===k)) subcatOptions.push({key:k,label:x.sub_category,parent:x.main_universe+' / '+x.category_group+' / '+x.sub_universe});
+  }});
+  selected.subcat=new Set([...selected.subcat].filter(k=>subcatOptions.some(o=>o.key===k)));
+  makeBox('subCatBox',subcatOptions,selected.subcat,(key,checked)=>syncFromSubcat(key,checked));
+
+  buildSeriesBox();
+}
+function selectDescendantsForCat(k) {
+  DATA.forEach(x=>{ if(catKey(x)===k) {
+    if(x.sub_universe) selected.sub.add(subKey(x));
+    if(x.sub_category) selected.subcat.add(subcatKey(x));
+    selected.series.add(itemKey(x));
+  }});
+}
+function unselectDescendantsForCat(k) {
+  DATA.forEach(x=>{ if(catKey(x)===k) {
+    if(x.sub_universe) selected.sub.delete(subKey(x));
+    if(x.sub_category) selected.subcat.delete(subcatKey(x));
+    selected.series.delete(itemKey(x));
+  }});
+}
+function selectDescendantsForSub(k) {
+  DATA.forEach(x=>{ if(subKey(x)===k) {
+    if(x.sub_category) selected.subcat.add(subcatKey(x));
+    selected.series.add(itemKey(x));
+  }});
+}
+function unselectDescendantsForSub(k) {
+  DATA.forEach(x=>{ if(subKey(x)===k) {
+    if(x.sub_category) selected.subcat.delete(subcatKey(x));
+    selected.series.delete(itemKey(x));
+  }});
+}
+function syncFromMain(main, checked) {
+  if(!checked) {
+    DATA.filter(x=>x.main_universe===main).forEach(x=>{ selected.cat.delete(catKey(x)); selected.sub.delete(subKey(x)); selected.subcat.delete(subcatKey(x)); selected.series.delete(itemKey(x)); });
+  } else {
+    DATA.filter(x=>x.main_universe===main && x.depth===1).forEach(x=>selected.series.add(itemKey(x)));
   }
+  buildSelectors(); renderAll();
 }
-function refreshGroupOptions() {
-  const sel = document.getElementById('groupFilter');
-  const old = sel.value || 'Top Level';
-  sel.innerHTML = '';
-  const standard = ['Top Level','Region','Quality','Maturity','All Series'];
-  standard.forEach(g=>{
-    const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o);
+function syncFromCat(k, checked) { if(checked) selectDescendantsForCat(k); else unselectDescendantsForCat(k); buildSelectors(); renderAll(); }
+function syncFromSub(k, checked) { if(checked) selectDescendantsForSub(k); else unselectDescendantsForSub(k); buildSelectors(); renderAll(); }
+function syncFromSubcat(k, checked) {
+  DATA.forEach(x=>{ if(subcatKey(x)===k) { if(checked) selected.series.add(itemKey(x)); else selected.series.delete(itemKey(x)); } });
+  buildSelectors(); renderAll();
+}
+function buildSeriesBox() {
+  const box=document.getElementById('seriesBox'); box.innerHTML='';
+  const pool=filteredSeriesPool();
+  pool.forEach(x=>{
+    const key=itemKey(x);
+    const card=document.createElement('label'); card.className='series-card';
+    const checked=selected.series.has(key)?'checked':'';
+    card.innerHTML=`<input type="checkbox" ${checked}> <div><div class="series-main">${x.display_name} <span style="font-weight:500;color:#69788d">(${x.ticker})</span></div><div class="series-path">${x.full_path}</div></div>`;
+    card.querySelector('input').onchange=function(){ if(this.checked) selected.series.add(key); else selected.series.delete(key); renderAll(); };
+    box.appendChild(card);
   });
-  sel.value = standard.includes(old) ? old : 'Top Level';
+  if(!pool.length) box.innerHTML='<div class="note">No series under selected parent path.</div>';
+  updateSeriesCount();
 }
+function updateSeriesCount() { document.getElementById('seriesCount').textContent=`Selected ${currentData().length} of ${filteredSeriesPool().length} visible series`; }
+function resetAll() { presetTopLevel(); }
+function clearSeries() { selected.series=new Set(); buildSeriesBox(); renderAll(); }
+function selectAllSeries() { filteredSeriesPool().forEach(x=>selected.series.add(itemKey(x))); buildSeriesBox(); renderAll(); }
+function presetTopLevel() { initEmpty(); unique(DATA.map(x=>x.main_universe)).forEach(v=>selected.main.add(v)); topLevelRows().forEach(x=>selected.series.add(itemKey(x))); buildSelectors(); renderAll(); }
+function presetRegions() { initEmpty(); unique(DATA.map(x=>x.main_universe)).forEach(v=>selected.main.add(v)); DATA.filter(x=>x.category_group==='Region').forEach(x=>{selected.cat.add(catKey(x)); if(x.sub_universe) selected.sub.add(subKey(x)); if(x.sub_category) selected.subcat.add(subcatKey(x)); selected.series.add(itemKey(x));}); buildSelectors(); renderAll(); }
+function presetQuality() { initEmpty(); unique(DATA.map(x=>x.main_universe)).forEach(v=>selected.main.add(v)); DATA.filter(x=>x.category_group==='Broad Quality').forEach(x=>{selected.cat.add(catKey(x)); if(x.sub_universe) selected.sub.add(subKey(x)); if(x.sub_category) selected.subcat.add(subcatKey(x)); selected.series.add(itemKey(x));}); buildSelectors(); renderAll(); }
+function presetMaturity() { initEmpty(); unique(DATA.map(x=>x.main_universe)).forEach(v=>selected.main.add(v)); DATA.filter(x=>['Maturity','Broad Maturity'].includes(x.category_group)).forEach(x=>{selected.cat.add(catKey(x)); if(x.sub_universe) selected.sub.add(subKey(x)); if(x.sub_category) selected.subcat.add(subcatKey(x)); selected.series.add(itemKey(x));}); buildSelectors(); renderAll(); }
 
-
-function themedLayout(extra={}) {
-  const fs = chartBaseSize();
-  return {
-    ...layoutBase,
-    font:{family:chartFontName(),color:'#1d2d44',size:fs},
-    legend:{font:{family:chartFontName(),size:Math.max(11,fs-2)}},
-    xaxis:{...layoutBase.xaxis,tickfont:{family:chartFontName(),size:fs-1},titlefont:{family:chartFontName(),size:fs+1}},
-    yaxis:{...layoutBase.yaxis,tickfont:{family:chartFontName(),size:fs-1},titlefont:{family:chartFontName(),size:fs+1}},
-    ...extra
-  };
-}
-
-function populateFilters() {
-  const groups = ['Top Level','Region','Quality','Maturity','All Series'];
-  const sel = document.getElementById('groupFilter');
-  sel.innerHTML='';
-  groups.forEach(g => {
-    const o = document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o);
-  });
-  sel.value='Top Level';
-  sel.onchange=renderAll;
-  document.getElementById('horizon').onchange=renderAll;
-  document.getElementById('chartFont').onchange=renderAll;
-  document.getElementById('baseFontSize').onchange=renderAll;
-  document.getElementById('heatCellFontSize').onchange=renderAll;
-  document.getElementById('heatAxisFontSize').onchange=renderAll;
-  document.getElementById('compositionValueMode').onchange=renderAll;
-  document.getElementById('scatterLabelMode').onchange=renderAll;
-  document.getElementById('scatterFontSize').onchange=renderAll;
-}
-
-function currentData() {
-  const g=document.getElementById('groupFilter').value;
-  let d = g==='All Series' ? DATA.slice() : DATA.filter(x=>x.group===g);
-  return d.filter(x=>x.display_name && x.ticker);
-}
-function fmt(v, digits=1) { return (v===null || v===undefined || Number.isNaN(v)) ? '–' : Number(v).toFixed(digits)+'%'; }
-
-function wrapLabel(text, maxLen=18) {
-  const words = String(text || '').split(' ');
-  const lines = [];
-  let line = '';
-  words.forEach(w => {
-    const candidate = line ? line + ' ' + w : w;
-    if (candidate.length > maxLen && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = candidate;
-    }
-  });
-  if (line) lines.push(line);
-  return lines.join('<br>');
-}
-
-function median(arr) {
-  const a=arr.filter(v=>v!==null && !Number.isNaN(v)).sort((x,y)=>x-y);
-  if(!a.length) return null; const m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2;
-}
 function updateKpis(d, metric) {
-  const vals=d.filter(x=>x[metric]!==null).sort((a,b)=>b[metric]-a[metric]);
+  const vals=d.filter(x=>x[metric]!==null && x[metric]!==undefined).sort((a,b)=>b[metric]-a[metric]);
   document.getElementById('kpiCount').textContent=d.length;
   if(vals.length) {
     document.getElementById('kpiBest').textContent=fmt(vals[0][metric]);
     document.getElementById('kpiBestName').textContent=vals[0].display_name;
-    const w=vals[vals.length-1];
-    document.getElementById('kpiWorst').textContent=fmt(w[metric]);
-    document.getElementById('kpiWorstName').textContent=w.display_name;
+    const w=vals[vals.length-1]; document.getElementById('kpiWorst').textContent=fmt(w[metric]); document.getElementById('kpiWorstName').textContent=w.display_name;
+  } else {
+    document.getElementById('kpiBest').textContent='–'; document.getElementById('kpiWorst').textContent='–'; document.getElementById('kpiBestName').textContent='No data'; document.getElementById('kpiWorstName').textContent='No data';
   }
-  const mo=median(d.map(x=>x.oad));
-  const m12=median(d.map(x=>x['12m_tot_rtn']));
+  const mo=median(d.map(x=>x.oad)), m12=median(d.map(x=>x['12m_tot_rtn']));
   document.getElementById('kpiOad').textContent=mo===null?'–':mo.toFixed(1);
   document.getElementById('kpi12m').textContent=m12===null?'–':m12.toFixed(1)+'%';
 }
 function renderRanking(d, metric) {
-  const s=d.filter(x=>x[metric]!==null).sort((a,b)=>b[metric]-a[metric]);
-  const labels=s.map(x=>wrapLabel(x.display_name,24)).reverse();
-  const trace={
-    type:'bar', orientation:'h',
-    y:labels,
+  const s = orderedData(d, metric).filter(x=>x[metric]!==null && x[metric]!==undefined);
+  const titleSuffix = orderMode()==='performance' ? 'Performance rank' : 'Hierarchy order';
+  Plotly.react('rankingChart',[{
+    type:'bar',
+    orientation:'h',
+    y:s.map(x=>wrapLabel(x.display_name,26)).reverse(),
     x:s.map(x=>x[metric]).reverse(),
-    text:s.map(x=>fmt(x[metric])).reverse(), textposition:'outside',
-    marker:{color:s.map(x=>colors[x.group]||'#0f4d94').reverse()}
-  };
-  Plotly.react('rankingChart',[trace],themedLayout({
-    height:Math.max(540,s.length*44+170),
-    margin:{l:300,r:90,t:35,b:70},
-    xaxis:{...layoutBase.xaxis,title:metricLabels[metric]+' Total Return (%)'},
-    yaxis:{automargin:true,tickfont:{family:chartFontName(),size:Math.max(12,chartBaseSize()-1)}}
+    text:s.map(x=>fmt(x[metric])).reverse(),
+    textposition:'outside',
+    marker:{color:s.map((_,i)=>palette[i%palette.length]).reverse()},
+    customdata:s.map(x=>x.full_path).reverse(),
+    hovertemplate:'%{customdata}<br>%{x:.2f}%<extra></extra>'
+  }],
+  layoutBase({
+    height:Math.max(540,s.length*42+160),
+    margin:{l:310,r:90,t:35,b:70},
+    xaxis:{title:metricLabels[metric]+' Total Return (%)',gridcolor:'#e7edf5'},
+    yaxis:{automargin:true},
+    annotations:[{
+      text:titleSuffix,
+      xref:'paper',yref:'paper',x:1,y:1.08,showarrow:false,
+      font:{size:12,color:'#64748b'}
+    }]
   }),config);
 }
 function renderScatter(d, metric) {
-  const groups=[...new Set(d.map(x=>x.group))];
-  const modeSetting=scatterLabelMode();
-  const positions=['top center','bottom center','middle left','middle right','top left','top right','bottom left','bottom right'];
-  const traces=[];
-  groups.forEach(g=>{
-    const s=d.filter(x=>x.group===g && x.oad!==null && x[metric]!==null);
-    const labels=s.map(x=>modeSetting==='short' ? shortAssetName(x.display_name) : x.display_name);
-    traces.push({
-      type:'scatter',
-      mode:modeSetting==='hover' ? 'markers' : 'markers+text',
-      name:g,
-      x:s.map(x=>x.oad),
-      y:s.map(x=>x[metric]),
-      text:labels,
-      textposition:s.map((_,i)=>positions[i % positions.length]),
-      textfont:{family:chartFontName(),size:scatterFontSize(),color:'#26384d'},
-      cliponaxis:false,
-      marker:{
-        size:s.map(x=>Math.max(15,Math.min(34,(x.count||100)/70+13))),
-        color:colors[g]||'#0f4d94',
-        opacity:.9,
-        line:{color:'white',width:1.2}
-      },
-      hovertext:s.map(x=>x.display_name),
-      hovertemplate:'%{hovertext}<br>OAD: %{x:.2f}<br>Return: %{y:.2f}%<extra></extra>'
-    });
-  });
-
-  const allX=d.map(x=>x.oad).filter(v=>v!==null);
-  const allY=d.map(x=>x[metric]).filter(v=>v!==null);
-  const xmin=Math.min(...allX), xmax=Math.max(...allX);
-  const ymin=Math.min(...allY), ymax=Math.max(...allY);
-  const xpad=Math.max(.25,(xmax-xmin)*.12);
-  const ypad=Math.max(.2,(ymax-ymin)*.18);
-
-  Plotly.react('scatterChart',traces,{
-    ...themedLayout({
-      height:650,
-      margin:{l:85,r:90,t:75,b:80},
-      showlegend:groups.length>1,
-      legend:{orientation:'h',x:0,y:1.14,font:{family:chartFontName(),size:Math.max(12,chartBaseSize()-2)}}
-    }),
-    xaxis:{
-      ...layoutBase.xaxis,
-      title:'OAD (years)',
-      range:[xmin-xpad,xmax+xpad],
-      tickfont:{family:chartFontName(),size:Math.max(13,chartBaseSize()-1)},
-      titlefont:{family:chartFontName(),size:chartBaseSize()+2}
-    },
-    yaxis:{
-      ...layoutBase.yaxis,
-      title:metricLabels[metric]+' Total Return (%)',
-      range:[ymin-ypad,ymax+ypad],
-      tickfont:{family:chartFontName(),size:Math.max(13,chartBaseSize()-1)},
-      titlefont:{family:chartFontName(),size:chartBaseSize()+2}
-    }
-  },config);
+  const mode=scatterMode();
+  const dd=orderedData(d, metric).filter(x=>x.oad!==null && x[metric]!==null && x[metric]!==undefined);
+  const labels=dd.map(x=>mode==='short'?shortName(x.display_name):x.display_name);
+  const xs=dd.map(x=>x.oad), ys=dd.map(x=>x[metric]);
+  if(!xs.length) { Plotly.purge('scatterChart'); return; }
+  const xmin=Math.min(...xs), xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys);
+  const xpad=Math.max(.25,(xmax-xmin)*.15), ypad=Math.max(.2,(ymax-ymin)*.22);
+  Plotly.react('scatterChart',[{type:'scatter',mode:mode==='hover'?'markers':'markers+text',x:xs,y:ys,text:labels,textposition:dd.map((_,i)=>['top center','bottom center','middle left','middle right','top left','top right'][i%6]),textfont:{size:Math.max(12,chartBaseSize()-1)},cliponaxis:false,marker:{size:dd.map(x=>Math.max(14,Math.min(34,(x.count||100)/80+13))),color:dd.map((_,i)=>palette[i%palette.length]),opacity:.9,line:{color:'#fff',width:1.2}},customdata:dd.map(x=>x.full_path),hovertemplate:'%{customdata}<br>OAD: %{x:.2f}<br>Return: %{y:.2f}%<extra></extra>'}],
+  layoutBase({height:650,margin:{l:85,r:85,t:55,b:80},showlegend:false,xaxis:{title:'OAD (years)',range:[xmin-xpad,xmax+xpad],gridcolor:'#e7edf5'},yaxis:{title:metricLabels[metric]+' Total Return (%)',range:[ymin-ypad,ymax+ypad],gridcolor:'#e7edf5'}}),config);
 }
 function renderComposition(d) {
-  const s=d.filter(x=>x.mtd_px_rtn!==null || x.mtd_cpn_rtn!==null || x.mtd_curr_rtn!==null);
-  const names=s.map(x=>wrapLabel(x.display_name,16));
-  const showVals = compositionValueMode()==='show';
-  const priceVals = s.map(x=>x.mtd_px_rtn||0);
-  const couponVals = s.map(x=>x.mtd_cpn_rtn||0);
-  const currencyVals = s.map(x=>x.mtd_curr_rtn||0);
-  const totalVals = s.map(x=>x.mtd_tot_rtn);
-
+  const s=orderedData(d).filter(x=>x.mtd_px_rtn!==null||x.mtd_cpn_rtn!==null||x.mtd_curr_rtn!==null);
+  const names=s.map(x=>wrapLabel(x.display_name,16)); const show=compValues()==='show'; const fs=chartBaseSize();
+  const textFont={family:chartFontName(),size:Math.max(11,fs-3),color:'#fff'};
   const traces=[
-    {
-      type:'bar',
-      name:'Price Return',
-      x:names,
-      y:priceVals,
-      marker:{color:'#666b72'},
-      text:showVals ? priceVals.map(valueText) : [],
-      textposition:'inside',
-      textfont:{family:chartFontName(),size:Math.max(11,chartBaseSize()-3),color:'#ffffff'},
-      insidetextanchor:'middle',
-      cliponaxis:false
-    },
-    {
-      type:'bar',
-      name:'Coupon Return',
-      x:names,
-      y:couponVals,
-      marker:{color:'#0f4d94'},
-      text:showVals ? couponVals.map(valueText) : [],
-      textposition:'inside',
-      textfont:{family:chartFontName(),size:Math.max(11,chartBaseSize()-3),color:'#ffffff'},
-      insidetextanchor:'middle',
-      cliponaxis:false
-    },
-    {
-      type:'bar',
-      name:'Currency Return',
-      x:names,
-      y:currencyVals,
-      marker:{color:'#10b981'},
-      text:showVals ? currencyVals.map(valueText) : [],
-      textposition:'inside',
-      textfont:{family:chartFontName(),size:Math.max(11,chartBaseSize()-3),color:'#ffffff'},
-      insidetextanchor:'middle',
-      cliponaxis:false
-    },
-    {
-      type:'scatter',
-      mode: showVals ? 'markers+text' : 'markers',
-      name:'Total Return',
-      x:names,
-      y:totalVals,
-      text:showVals ? totalVals.map(valueText) : [],
-      textposition:'top center',
-      textfont:{family:chartFontName(),size:Math.max(12,chartBaseSize()-2),color:'#7c3aed'},
-      marker:{symbol:'diamond',size:11,color:'#7c3aed',line:{color:'white',width:1.5}}
-    }
+    {type:'bar',name:'Price Return',x:names,y:s.map(x=>x.mtd_px_rtn||0),marker:{color:'#666b72'},text:show?s.map(x=>valueText(x.mtd_px_rtn)):[],textposition:'inside',textfont:textFont,cliponaxis:false},
+    {type:'bar',name:'Coupon Return',x:names,y:s.map(x=>x.mtd_cpn_rtn||0),marker:{color:'#0f4d94'},text:show?s.map(x=>valueText(x.mtd_cpn_rtn)):[],textposition:'inside',textfont:textFont,cliponaxis:false},
+    {type:'bar',name:'Currency Return',x:names,y:s.map(x=>x.mtd_curr_rtn||0),marker:{color:'#10b981'},text:show?s.map(x=>valueText(x.mtd_curr_rtn)):[],textposition:'inside',textfont:textFont,cliponaxis:false},
+    {type:'scatter',mode:show?'markers+text':'markers',name:'Total Return',x:names,y:s.map(x=>x.mtd_tot_rtn),text:show?s.map(x=>valueText(x.mtd_tot_rtn)):[],textposition:'top center',textfont:{size:Math.max(12,fs-2),color:'#7c3aed'},marker:{symbol:'diamond',size:12,color:'#7c3aed',line:{color:'#fff',width:1.5}}}
   ];
-  const fs = chartBaseSize();
-  Plotly.react('compositionChart',traces,{
-    ...themedLayout({
-      height:650,
-      barmode:'relative',
-      uniformtext:{mode:'hide', minsize:10},
-      margin:{l:75,r:25,t:50,b:200},
-      legend:{orientation:'h',x:0,y:1.14,font:{family:chartFontName(),size:Math.max(11,fs-2)}}
-    }),
-    yaxis:{
-      ...layoutBase.yaxis,
-      title:'Return (%)',
-      tickfont:{family:chartFontName(),size:Math.max(12,fs-1)},
-      titlefont:{family:chartFontName(),size:fs+1}
-    },
-    xaxis:{
-      type:'category',
-      tickangle:0,
-      automargin:true,
-      tickfont:{family:chartFontName(),size:Math.max(11,fs-2)},
-      ticklabelposition:'outside'
-    }
-  },config);
+  Plotly.react('compositionChart',traces,layoutBase({height:650,barmode:'relative',uniformtext:{mode:'hide',minsize:10},margin:{l:75,r:25,t:55,b:205},legend:{orientation:'h',x:0,y:1.14},yaxis:{title:'Return (%)',gridcolor:'#e7edf5'},xaxis:{type:'category',tickangle:0,automargin:true}}),config);
 }
 function renderHeatmap(d) {
   const metrics=['1d_tot_rtn','mtd_tot_rtn','ytd_tot_rtn','3m_tot_rtn','6m_tot_rtn','12m_tot_rtn'];
+  d = orderedData(d);
   const z=d.map(x=>metrics.map(m=>x[m]));
-  const cellSize = heatCellFontSize();
-  const axisSize = heatAxisFontSize();
-  Plotly.react('heatmapChart',[{
-    type:'heatmap',
-    z:z,
-    x:metrics.map(m=>metricLabels[m]),
-    y:d.map(x=>x.display_name),
-    colorscale:[[0,'#c62828'],[.5,'#fff7bc'],[1,'#087f5b']],
-    zmid:0,
-    text:z.map(r=>r.map(v=>v===null?'':Number(v).toFixed(1))),
-    texttemplate:'%{text}',
-    textfont:{family:chartFontName(),size:cellSize,color:'#26384d'},
-    hovertemplate:'%{y}<br>%{x}: %{z:.2f}%<extra></extra>',
-    colorbar:{
-      title:{text:'Return %',font:{family:chartFontName(),size:axisSize}},
-      tickfont:{family:chartFontName(),size:Math.max(14,axisSize-2)},
-      thickness:24,
-      len:.88
-    }
-  }],{
-    ...themedLayout({
-      height:Math.max(620,d.length*56+180),
-      margin:{l:300,r:120,t:80,b:50},
-      showlegend:false
-    }),
-    xaxis:{
-      side:'top',
-      tickfont:{family:chartFontName(),size:axisSize,color:'#26384d'},
-      titlefont:{family:chartFontName(),size:axisSize+2}
-    },
-    yaxis:{
-      automargin:true,
-      tickfont:{family:chartFontName(),size:axisSize,color:'#26384d'}
-    }
-  },config);
+  Plotly.react('heatmapChart',[{type:'heatmap',z:z,x:metrics.map(m=>metricLabels[m]),y:d.map(x=>wrapLabel(x.display_name,28)),colorscale:[[0,'#c62828'],[.5,'#fff7bc'],[1,'#087f5b']],zmid:0,text:z.map(r=>r.map(v=>v===null||v===undefined?'':Number(v).toFixed(1))),texttemplate:'%{text}',textfont:{size:Math.max(14,chartBaseSize())},hovertemplate:'%{y}<br>%{x}: %{z:.2f}%<extra></extra>',colorbar:{title:'Return %',thickness:24}}],
+  layoutBase({height:Math.max(620,d.length*55+180),margin:{l:310,r:95,t:70,b:55},showlegend:false,xaxis:{side:'top'},yaxis:{automargin:true}}),config);
 }
 function renderTable(d) {
-  const headers=['Asset','Group','Ticker','OAD','MTD','YTD','3M','6M','12M'];
+  d = orderedData(d);
+  const headers=['Main Universe','Category Group','Sub Universe','Sub Category','Series','Ticker','OAD','MTD','YTD','3M','6M','12M','Full Path'];
   let h='<thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>';
   d.forEach(x=>{
-    const vals=[x.display_name,x.group,x.ticker,x.oad===null?'–':Number(x.oad).toFixed(2),
-      fmt(x.mtd_tot_rtn),fmt(x.ytd_tot_rtn),fmt(x['3m_tot_rtn']),fmt(x['6m_tot_rtn']),fmt(x['12m_tot_rtn'])];
-    h+='<tr>'+vals.map((v,i)=>{
-      let cls='';
-      if(i>=4 && v!=='–') cls=parseFloat(v)>=0?'pos':'neg';
-      return '<td class="'+cls+'">'+v+'</td>';
-    }).join('')+'</tr>';
+    const vals=[x.main_universe,x.category_group||'',x.sub_universe||'',x.sub_category||'',x.series||x.display_name,x.ticker,x.oad===null?'–':Number(x.oad).toFixed(2),fmt(x.mtd_tot_rtn),fmt(x.ytd_tot_rtn),fmt(x['3m_tot_rtn']),fmt(x['6m_tot_rtn']),fmt(x['12m_tot_rtn']),x.full_path];
+    h+='<tr>'+vals.map((v,i)=>{let cls=''; if(i>=7&&i<=11&&v!=='–') cls=parseFloat(v)>=0?'pos':'neg'; return `<td class="${cls}">${v}</td>`;}).join('')+'</tr>';
   });
   h+='</tbody>'; document.getElementById('dataTable').innerHTML=h;
 }
 function renderAll() {
-  const d=currentData(); const metric=document.getElementById('horizon').value;
-  updateKpis(d,metric); renderRanking(d,metric); renderScatter(d,metric);
-  renderComposition(d); renderHeatmap(d); renderTable(d);
+  const d=currentData(); const metric=document.getElementById('horizon').value; updateSeriesCount();
+  if(!d.length) { ['rankingChart','scatterChart','compositionChart','heatmapChart'].forEach(id=>Plotly.purge(id)); renderTable([]); updateKpis([],metric); return; }
+  updateKpis(d,metric); renderRanking(d,metric); renderScatter(d,metric); renderComposition(d); renderHeatmap(d); renderTable(d);
 }
-function resetFilters() {
-  document.getElementById('groupFilter').value='Top Level';
-  document.getElementById('horizon').value='ytd_tot_rtn';
-  renderAll();
-}
-function downloadPlot(id,filename) {
-  Plotly.downloadImage(id,{format:'png',filename:filename.replace('.png',''),width:1920,height:1080,scale:1});
-}
-async function plotDataUrl(id) {
-  return await Plotly.toImage(id,{format:'png',width:1920,height:1080});
-}
+function downloadPlot(id,filename) { Plotly.downloadImage(id,{format:'png',filename:filename.replace('.png',''),width:1920,height:1080,scale:1}); }
+async function plotDataUrl(id) { return await Plotly.toImage(id,{format:'png',width:1920,height:1080}); }
 async function exportPPT() {
-  const pptx = new PptxGenJS();
-  pptx.layout='LAYOUT_WIDE';
-  pptx.author='EM FI Dashboard';
-  pptx.subject='EM Fixed Income Dashboard';
-  pptx.title='EM FI Dashboard Export';
-  pptx.company='Think Then Talk';
-  pptx.lang='en-US';
-  pptx.theme={headFontFace:chartFontName(),bodyFontFace:chartFontName(),lang:'en-US'};
-  pptx.defineSlideMaster({
-    title:'MASTER',
-    background:{color:'F5F8FC'},
-    objects:[
-      {rect:{x:0,y:0,w:13.333,h:.42,fill:{color:'0B1F3A'},line:{color:'0B1F3A'}}},
-      {text:{text:'EM Fixed Income Dashboard',options:{x:.45,y:.08,w:6.5,h:.22,fontFace:chartFontName(),fontSize:14,bold:true,color:'FFFFFF',margin:0}}},
-      {text:{text:updateDataDateDisplay(),options:{x:10.0,y:.1,w:2.8,h:.18,fontFace:chartFontName(),fontSize:9,color:'DCE7F3',align:'right',margin:0}}}
-    ],
-    slideNumber:{x:12.85,y:7.15,color:'748397',fontSize:8}
-  });
-  const items=[
-    ['rankingChart','Performance Ranking'],
-    ['scatterChart','Performance vs Duration'],
-    ['compositionChart','MTD Return Composition'],
-    ['heatmapChart','Multi-Period Performance Heatmap']
-  ];
-  for (const [id,title] of items) {
-    const slide=pptx.addSlide('MASTER');
-    slide.addText(title,{x:.55,y:.62,w:12.1,h:.35,fontFace:chartFontName(),fontSize:pptTitleSize(),bold:true,color:'122033',margin:0});
-    const img=await plotDataUrl(id);
-    slide.addImage({data:img,x:.35,y:.95,w:12.65,h:6.05});
-    slide.addText('Source: Bloomberg',{x:.62,y:7.08,w:4.5,h:.15,fontFace:chartFontName(),fontSize:9,color:'748397',margin:0});
+  const pptx=new PptxGenJS(); pptx.layout='LAYOUT_WIDE'; pptx.author='EM FI Dashboard'; pptx.theme={headFontFace:chartFontName(),bodyFontFace:chartFontName(),lang:'en-US'};
+  pptx.defineSlideMaster({title:'MASTER',background:{color:'F5F8FC'},objects:[{rect:{x:0,y:0,w:13.333,h:.42,fill:{color:'0B1F3A'},line:{color:'0B1F3A'}}},{text:{text:'EM Fixed Income Dashboard',options:{x:.45,y:.08,w:6.5,h:.22,fontFace:chartFontName(),fontSize:14,bold:true,color:'FFFFFF',margin:0}}}],slideNumber:{x:12.85,y:7.15,color:'748397',fontSize:8}});
+  for(const [id,title] of [['rankingChart','Performance by Hierarchy'],['scatterChart','Performance vs Duration'],['compositionChart','MTD Return Composition'],['heatmapChart','Multi-Period Heatmap']]) {
+    const slide=pptx.addSlide('MASTER'); slide.addText(title,{x:.55,y:.62,w:12.1,h:.35,fontFace:chartFontName(),fontSize:26,bold:true,color:'122033',margin:0});
+    const img=await plotDataUrl(id); slide.addImage({data:img,x:.35,y:.95,w:12.65,h:6.05}); slide.addText('Source: Uploaded EM FI workbook',{x:.62,y:7.08,w:4.5,h:.15,fontFace:chartFontName(),fontSize:9,color:'748397',margin:0});
   }
-  await pptx.writeFile({fileName:'EM_FI_Dashboard_Export.pptx'});
+  await pptx.writeFile({fileName:'EM_FI_Dashboard_Cascading_Hierarchy_Export.pptx'});
 }
-populateFilters();
-updateDataDateDisplay();
-renderAll();
+
+document.getElementById('horizon').onchange=renderAll;
+document.getElementById('orderMode').onchange=renderAll;
+document.getElementById('chartFont').onchange=renderAll;
+document.getElementById('baseFontSize').onchange=renderAll;
+document.getElementById('compositionValueMode').onchange=renderAll;
+document.getElementById('scatterLabelMode').onchange=renderAll;
+document.getElementById('searchBox').oninput=function(){ buildSeriesBox(); renderAll(); };
+presetTopLevel();
 </script>
 </body>
 </html>
