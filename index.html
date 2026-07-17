@@ -33,14 +33,14 @@ button.secondary { background:#eaf2fb; color:#0f4d94; border-color:#c9dcf2; }
 .panel-sub { font-size:12px; color:#6b7789; margin-top:4px; }
 .panel-body { padding:14px 18px 16px; }
 .selector-grid { display:grid; grid-template-columns:repeat(4,minmax(210px,1fr)); gap:14px; }
-.selector-box { border:1px solid #e2eaf5; border-radius:10px; background:#fbfdff; padding:10px; min-height:170px; max-height:300px; overflow:auto; }
+.selector-box { border:1px solid #e2eaf5; border-radius:10px; background:#fbfdff; padding:10px; min-height:170px; max-height:none; overflow:visible; }
 .selector-box h4 { margin:0 0 8px; font-size:12px; color:#17395e; text-transform:uppercase; letter-spacing:.4px; }
 .option { display:flex; gap:7px; align-items:flex-start; padding:6px 4px; font-size:12px; line-height:1.25; border-bottom:1px solid #eef3f9; }
 .option:last-child { border-bottom:none; }
 .option input { margin-top:2px; }
 .option b { font-size:12px; }
 .option small { display:block; color:#75849a; font-size:10px; margin-top:2px; }
-.series-list { display:grid; grid-template-columns:repeat(2,minmax(340px,1fr)); gap:8px 14px; max-height:330px; overflow:auto; padding-right:8px; }
+.series-list { display:grid; grid-template-columns:repeat(2,minmax(340px,1fr)); gap:8px 14px; max-height:none; overflow:visible; padding-right:0; }
 .series-card { display:flex; gap:8px; align-items:flex-start; border:1px solid #e2eaf5; border-radius:9px; background:#fbfdff; padding:8px 9px; font-size:12px; }
 .series-card input { margin-top:2px; }
 .series-main { font-weight:900; color:#143452; }
@@ -58,7 +58,7 @@ button.secondary { background:#eaf2fb; color:#0f4d94; border-color:#c9dcf2; }
 .card-title { font-size:18px; font-weight:900; }
 .card-sub { font-size:12px; color:#6b7789; margin-top:4px; }
 .chart { width:100%; aspect-ratio:16/9; min-height:460px; }
-.table-wrap { padding:0 18px 18px; overflow:auto; }
+.table-wrap { padding:0 18px 18px; overflow:visible; }
 table { width:100%; border-collapse:collapse; font-size:12px; }
 th { background:#17395e; color:#fff; text-align:left; padding:10px 9px; position:sticky; top:0; }
 td { padding:9px; border-bottom:1px solid #edf1f6; }
@@ -75,7 +75,103 @@ tr:nth-child(even) td { background:#f8fafc; }
   .card.full { grid-column:auto; }
   .kpis { grid-template-columns:repeat(2,1fr); }
 }
+
+/* =========================================================
+   EMBED MODE — NO INTERNAL SCROLLBARS
+   Use ?embed=1 inside EM Strategy Monitor.
+   Parent page owns vertical scrolling.
+   ========================================================= */
+html.embed-mode,
+html.embed-mode body {
+  width:100%;
+  height:auto !important;
+  min-height:0 !important;
+  overflow:visible !important;
+  scrollbar-width:none !important;
+}
+
+html.embed-mode body {
+  display:block;
+}
+
+html.embed-mode body::-webkit-scrollbar,
+html.embed-mode .selector-box::-webkit-scrollbar,
+html.embed-mode .series-list::-webkit-scrollbar,
+html.embed-mode .table-wrap::-webkit-scrollbar {
+  display:none !important;
+  width:0 !important;
+  height:0 !important;
+}
+
+html.embed-mode header {
+  padding:14px 18px 12px;
+}
+
+html.embed-mode header h1 {
+  font-size:22px;
+}
+
+html.embed-mode header p {
+  font-size:11px;
+}
+
+html.embed-mode .toolbar {
+  position:relative !important;
+  top:auto !important;
+  z-index:auto !important;
+  padding:10px 16px;
+}
+
+html.embed-mode .status {
+  padding:7px 16px;
+}
+
+html.embed-mode .main {
+  padding:14px 16px 22px;
+  overflow:visible !important;
+}
+
+html.embed-mode .panel,
+html.embed-mode .card,
+html.embed-mode .selector-box,
+html.embed-mode .series-list,
+html.embed-mode .table-wrap {
+  height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+}
+
+html.embed-mode .selector-grid {
+  align-items:start;
+}
+
+html.embed-mode .chart {
+  min-height:420px;
+}
+
+html.embed-mode table {
+  width:100%;
+  table-layout:auto;
+}
+
+/* Keep export stages unchanged */
+html.embed-mode body.exporting,
+html.embed-mode .ppt-page,
+html.embed-mode .hidden-stage {
+  overflow:hidden !important;
+}
+
 </style>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  if (params.get("embed") === "1") {
+    document.documentElement.classList.add("embed-mode");
+  }
+})();
+</script>
+
 </head>
 <body>
 <header>
@@ -537,5 +633,60 @@ document.getElementById('scatterLabelMode').onchange=renderAll;
 document.getElementById('searchBox').oninput=function(){ buildSeriesBox(); renderAll(); };
 presetTopLevel();
 </script>
+
+<script>
+(function(){
+  const isEmbed = new URLSearchParams(location.search).get("embed") === "1";
+  if (!isEmbed) return;
+
+  let lastHeight = 0;
+  let timer = null;
+
+  function reportHeight(){
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const height = Math.ceil(Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        document.body.getBoundingClientRect().height
+      ));
+
+      if (Math.abs(height - lastHeight) > 2) {
+        lastHeight = height;
+        window.parent.postMessage({
+          type:"em-dashboard-resize",
+          dashboard:"fi",
+          height:height
+        }, "*");
+      }
+    }, 80);
+  }
+
+  window.addEventListener("load", reportHeight);
+  window.addEventListener("resize", reportHeight);
+  document.addEventListener("change", reportHeight);
+  document.addEventListener("click", reportHeight);
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(reportHeight);
+    ro.observe(document.documentElement);
+    ro.observe(document.body);
+  }
+
+  if (window.MutationObserver) {
+    const mo = new MutationObserver(reportHeight);
+    mo.observe(document.body, {
+      childList:true,
+      subtree:true,
+      attributes:true,
+      characterData:true
+    });
+  }
+
+  setTimeout(reportHeight, 250);
+  setTimeout(reportHeight, 900);
+})();
+</script>
+
 </body>
 </html>
