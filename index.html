@@ -59,7 +59,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&g
 function excelDate(v){if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`} if(typeof v==='string'){let m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10)} return null}
 function buildModel(raw){
  const returns=raw.returns||{}, tri={tickers:raw.hist_tickers||[],rows:raw.hist_rows||[]};
- const series=(raw.master||[]).filter(x=>x.ticker).map((x,i)=>{const lv=(x.levels||[]).filter(Boolean);return {ticker:x.ticker,label:x.label||lv.at(-1)||x.ticker,levels:lv,main:lv[0]||x.label,cat:lv[1]||null,sub:lv[2]||null,subcat:lv[3]||null,series:lv[4]||null,depth:lv.length,full_path:lv.join(' > '),order:(x.order??i),...(returns[x.ticker]||{})}});
+ const series=(raw.master||[]).filter(x=>x.ticker).map((x,i)=>{const lv=(x.levels||[]).filter(Boolean);const isRatingPath=lv[3]==='Quality'&&lv[4];const genericLabels=new Set(['Broad Quality','Broad Maturity','Quality','Maturity']);const resolvedLabel=genericLabels.has(x.label)&&lv.at(-1)?lv.at(-1):(x.label||lv.at(-1)||x.ticker);return {ticker:x.ticker,label:resolvedLabel,levels:lv,main:lv[0]||x.label,cat:lv[1]||null,sub:lv[2]||null,subcat:isRatingPath?lv[4]:(lv[3]||null),series:isRatingPath?null:(lv[4]||null),depth:isRatingPath?4:lv.length,full_path:lv.join(' > '),order:(x.order??i),...(returns[x.ticker]||{})}});
  return {series,tri,config:raw.config||{},file_name:raw.file_name||'Workbook'}
 }
 function parseWorkbook(wb,fileName){
