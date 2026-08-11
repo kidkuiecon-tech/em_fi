@@ -6,6 +6,7 @@
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root{--base-font:16px;--navy:#0b1f3a;--blue:#0f4d94;--green:#10b981;--orange:#f59e0b;--purple:#7c3aed;--red:#c62828;--light:#f4f7fb;--border:#d9e2ef;--text:#122033;--muted:#65758b}
 *{box-sizing:border-box} body{margin:0;background:var(--light);color:var(--text);font-family:Arial,Helvetica,sans-serif}
@@ -249,7 +250,75 @@ function renderComposition(d){const q=d.filter(r=>[r.mtd_px,r.mtd_cpn,r.mtd_curr
 function renderHeatmap(d,end){const mode=document.getElementById('sourceMode').value,z=d.map(r=>heatHorizons.map(h=>chosenReturn(r,h,mode,end).value));Plotly.react('heatmapChart',[{type:'heatmap',z,x:heatHorizons,y:d.map(r=>r.label),colorscale:[[0,'#c62828'],[.5,'#fff7bc'],[1,'#087f5b']],zmid:0,text:z.map(a=>a.map(v=>v===null?'':v.toFixed(1))),texttemplate:'%{text}',hovertemplate:'%{y}<br>%{x}: %{z:.2f}%<extra></extra>',colorbar:{title:'Return %'}}],layout({height:Math.max(620,d.length*45+180),margin:{l:280,r:90,t:65,b:55},xaxis:{side:'top'},yaxis:{automargin:true},showlegend:false}),config)}
 function renderTable(d,vals,h,end){const headers=['Hierarchy','Ticker','OAD','Bloomberg','Calculated TRI','Difference','Used Return','Source','Status'];let s='<thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>';d.forEach(r=>{const v=vals.get(r.ticker),diff=v.bbg!==null&&v.tri!==null?v.tri-v.bbg:null;let st='Missing',cls='missing';if(diff!==null){if(Math.abs(diff)<=.01){st='Match';cls='match'}else if(Math.abs(diff)<=.05){st='Review';cls='review'}else{st='Mismatch';cls='neg'}}const vals2=[r.full_path,r.ticker,fmtN(r.oad),fmt(v.bbg),fmt(v.tri),diff===null?'–':`${diff>=0?'+':''}${diff.toFixed(4)} ppt`,fmt(v.value),v.source,st];s+='<tr>'+vals2.map((x,i)=>`<td class="${i===8?cls:(i>=3&&i<=6&&x!=='–'?(parseFloat(x)>=0?'pos':'neg'):'')}">${esc(x)}</td>`).join('')+'</tr>'});document.getElementById('dataTable').innerHTML=s+'</tbody>'}
 function downloadPlot(id,name){Plotly.downloadImage(id,{format:'png',filename:name.replace('.png',''),width:1600,height:900,scale:2})}
-async function exportPPT(){const pptx=new PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='EM Strategy Monitor';pptx.subject='EM Fixed Income Returns';pptx.title='EM Fixed Income Return Dashboard';pptx.company='';pptx.lang='en-US';const ids=[['rankingChart','Performance by Hierarchy'],['scatterChart','Performance vs Duration'],['compositionChart','MTD Return Composition'],['heatmapChart','Multi-Period Performance Heatmap']];for(const [id,title] of ids){const img=await Plotly.toImage(id,{format:'png',width:1600,height:900,scale:2});const slide=pptx.addSlide();slide.background={color:'F4F7FB'};slide.addText(title,{x:.45,y:.25,w:12.4,h:.4,fontFace:'Arial',fontSize:24,bold:true,color:'0B1F3A'});slide.addText(`${document.getElementById('horizon').value} | ${document.getElementById('sourceMode').value} | As of ${document.getElementById('asOfDate').value}`,{x:.47,y:.68,w:12,h:.25,fontFace:'Arial',fontSize:10,color:'65758B'});slide.addImage({data:img,x:.45,y:1.0,w:12.4,h:6.25})}await pptx.writeFile({fileName:'EM_FI_Return_Dashboard.pptx'})}
+function pptFontFace(){return document.getElementById('chartFont')?.value || 'Arial'}
+function addDeckHeader(pptx,slide,title,subtitle=''){
+ const font=pptFontFace();
+ slide.background={color:'F4F7FB'};
+ slide.addShape(pptx.ShapeType.rect,{x:0,y:0,w:13.333,h:0.72,fill:{color:'07182D'},line:{color:'07182D'}});
+ slide.addShape(pptx.ShapeType.rect,{x:0,y:0.72,w:13.333,h:0.06,fill:{color:'26C6DA'},line:{color:'26C6DA'}});
+ slide.addText(title,{x:0.38,y:0.14,w:10.9,h:0.28,fontFace:font,fontSize:18,bold:true,color:'FFFFFF',margin:0,breakLine:false,fit:'shrink'});
+ if(subtitle)slide.addText(subtitle,{x:0.40,y:0.45,w:11.6,h:0.18,fontFace:font,fontSize:7.5,color:'DCEAFB',margin:0,breakLine:false,fit:'shrink'});
+}
+function addCard(pptx,slide,x,y,w,h,title,sub=''){
+ const font=pptFontFace();
+ slide.addShape(pptx.ShapeType.roundRect,{x,y,w,h,rectRadius:0.10,fill:{color:'FFFFFF'},line:{color:'D9E2EF',width:0.8}});
+ slide.addText(title,{x:x+0.16,y:y+0.12,w:w-0.32,h:0.20,fontFace:font,fontSize:10.5,bold:true,color:'122033',margin:0,fit:'shrink'});
+ if(sub)slide.addText(sub,{x:x+0.16,y:y+0.34,w:w-0.32,h:0.16,fontFace:font,fontSize:6.5,color:'6B7789',margin:0,fit:'shrink'});
+ slide.addShape(pptx.ShapeType.line,{x:x,y:y+0.60,w:w,h:0,line:{color:'EDF1F6',width:0.8}});
+}
+function addDeckFooter(slide,txt){
+ const font=pptFontFace();
+ slide.addText(txt,{x:0.38,y:7.26,w:12.45,h:0.14,fontFace:font,fontSize:5.8,color:'65758B',margin:0,fit:'shrink'});
+}
+async function captureElementAsPng(el){
+ if(!window.html2canvas)throw new Error('html2canvas is not loaded. Please check your internet connection and refresh.');
+ const canvas=await html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,windowWidth:Math.max(el.scrollWidth,1600),windowHeight:Math.max(el.scrollHeight,900)});
+ return {data:canvas.toDataURL('image/png'),width:canvas.width,height:canvas.height};
+}
+function fitImageBox(imgW,imgH,boxX,boxY,boxW,boxH){
+ const ar=imgW/imgH,bar=boxW/boxH;let w,h,x,y;
+ if(ar>=bar){w=boxW;h=w/ar;x=boxX;y=boxY+(boxH-h)/2}else{h=boxH;w=h*ar;y=boxY;x=boxX+(boxW-w)/2}
+ return{x,y,w,h}
+}
+function sourceLine(){
+ const asOf=document.getElementById('asOfDate')?.value||'–';
+ return `Source: Bloomberg data downloaded by user; OAS from Hist_OAS_bps in bp, yield from Hist_YTW_pct, returns from Return sheet. As of ${asOf}.`;
+}
+async function addMarketReviewSlide(pptx){
+ const table=document.getElementById('marketReviewTable'),universe=document.getElementById('marketReviewUniverse')?.value||'EM Fixed Income';
+ if(!table)return;
+ renderMarketReview();
+ const wrap=document.createElement('div');
+ wrap.style.position='fixed';wrap.style.left='-99999px';wrap.style.top='0';wrap.style.background='#ffffff';wrap.style.padding='0';wrap.style.width='1600px';wrap.style.overflow='visible';wrap.style.fontFamily='Arial,Helvetica,sans-serif';
+ const clone=table.cloneNode(true);
+ clone.style.width='1600px';clone.style.fontSize='18px';clone.style.tableLayout='fixed';clone.style.borderCollapse='collapse';
+ clone.querySelectorAll('th,td').forEach(cell=>{cell.style.padding='7px 8px';cell.style.lineHeight='1.08';cell.style.boxSizing='border-box';});
+ wrap.appendChild(clone);document.body.appendChild(wrap);
+ const img=await captureElementAsPng(wrap);
+ document.body.removeChild(wrap);
+ const slide=pptx.addSlide();
+ addDeckHeader(pptx,slide,'EM Fixed Income Market Review','Total and Excess Returns — hierarchy table from Bloomberg index data');
+ addCard(pptx,slide,0.28,0.96,12.78,6.22,`${universe} – Total and Excess Returns`,`${document.getElementById('sourceMode').value} | As of ${document.getElementById('asOfDate').value}`);
+ const fit=fitImageBox(img.width,img.height,0.42,1.66,12.48,5.34);
+ slide.addImage({data:img.data,x:fit.x,y:fit.y,w:fit.w,h:fit.h});
+ addDeckFooter(slide,sourceLine());
+}
+async function addPlotSlide(pptx,id,title,subtitle){
+ const img=await Plotly.toImage(id,{format:'png',width:1600,height:900,scale:2});
+ const slide=pptx.addSlide();
+ addDeckHeader(pptx,slide,'EM Fixed Income Return Dashboard',subtitle);
+ addCard(pptx,slide,0.28,0.96,12.78,6.22,title,'Charts use the same dashboard template style as the ranking presentation matrix.');
+ slide.addImage({data:img,x:0.50,y:1.55,w:12.20,h:5.30});
+ addDeckFooter(slide,sourceLine());
+}
+async function exportPPT(){
+ const pptx=new PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='EM Strategy Monitor';pptx.subject='EM Fixed Income Returns';pptx.title='EM Fixed Income Return Dashboard';pptx.company='';pptx.lang='en-US';
+ await addMarketReviewSlide(pptx);
+ const meta=`${document.getElementById('horizon').value} | ${document.getElementById('sourceMode').value} | As of ${document.getElementById('asOfDate').value}`;
+ const ids=[['rankingChart','Performance by Hierarchy'],['scatterChart','Performance vs Duration'],['compositionChart','MTD Return Composition'],['heatmapChart','Multi-Period Performance Heatmap']];
+ for(const [id,title] of ids){if(document.getElementById(id))await addPlotSlide(pptx,id,title,meta)}
+ await pptx.writeFile({fileName:'EM_FI_Return_Dashboard_Market_Review_Template_Aligned.pptx'})
+}
 async function loadUploadedData(){const input=document.getElementById('dataUpload'),status=document.getElementById('uploadStatus');if(!input.files?.length){status.textContent='Please choose an Excel file first.';return}try{const f=input.files[0],buf=await f.arrayBuffer(),wb=XLSX.read(buf,{type:'array',cellDates:true});MODEL=parseWorkbook(wb,f.name);setupFromModel();status.textContent=`Updated successfully: ${f.name} | ${MODEL.series.length} series | hierarchy rebuilt from Return; OAS/Yield history matched by ticker`;status.style.color='#047857'}catch(e){status.textContent='Update failed: '+e.message;status.style.color='#b91c1c'}}
 function setupFromModel(){const ld=latestDates(),cfg=MODEL.config||{};document.getElementById('asOfDate').value=ld.common||cfg.as_of||'';document.getElementById('customStart').value=cfg.custom_start||'';if(['1D','MTD','WTD','QTD','YTD','1M','3M','6M','12M','Custom'].includes(cfg.period_type))document.getElementById('horizon').value=cfg.period_type;document.getElementById('uploadStatus').textContent=`Current data: ${MODEL.file_name} | Bloomberg as of ${ld.returnDate||'–'} | TRI through ${ld.triDate||'–'}`;setupMarketReviewUniverse();initSelection()}
 function resetAll(){document.getElementById('sourceMode').value='Auto';document.getElementById('horizon').value='YTD';document.getElementById('orderMode').value='hierarchy';document.getElementById('baseFontSize').value='16';document.getElementById('compositionValueMode').value='show';document.getElementById('scatterLabelMode').value='hover';document.getElementById('searchBox').value='';setupFromModel()}
